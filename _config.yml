@@ -1,0 +1,7 @@
+title: Mr. Tostado
+description: Personal website
+baseurl: "/mrtostadoweb"
+url: "https://tostadinator.github.io"
+theme: minima
+
+markdown: kramdown
