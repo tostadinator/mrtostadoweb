@@ -1,7 +1,7 @@
 title: Mr. Tostado
-description: Personal website
+description: Instructor · Course Resources, FAQ & Portfolio
+author: Mr. Tostado
 baseurl: "/mrtostadoweb"
 url: "https://tostadinator.github.io"
-theme: minima
 
 markdown: kramdown
