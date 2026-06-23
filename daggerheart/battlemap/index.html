@@ -175,9 +175,10 @@ layout: null
 
   const DEFAULT_BG = "https://i.redd.it/g39kbyrmglpc1.jpeg";
   let db, mapRef, mapState = { bgUrl: DEFAULT_BG, tokens: {} }, dragging = null;
-  let tokenCounter = 1;
+  let tokenCounter = 1, started = false;
 
   window.initApp = async function() {
+    if (started) return; started = true;
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     mapRef = doc(db, "battlemap", "current");

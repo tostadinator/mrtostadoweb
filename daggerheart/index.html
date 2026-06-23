@@ -175,9 +175,10 @@ layout: null
     { docId: "paul",         name: "Paul",         className: "—" },
   ];
 
-  let db, spotlightRef;
+  let db, spotlightRef, started = false;
 
   window.initApp = async function() {
+    if (started) return; started = true;
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     spotlightRef = doc(db, "party", "spotlight");

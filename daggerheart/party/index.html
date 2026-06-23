@@ -174,9 +174,10 @@ layout: null
   const MAX_POOL = 12;
   const MAX_PLAYER_PIPS = 6;
 
-  let db, poolsRef, poolState = { fear: 1 };
+  let db, poolsRef, poolState = { fear: 1 }, started = false;
 
   window.initApp = async function() {
+    if (started) return; started = true;
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     poolsRef = doc(db, "party", "pools");

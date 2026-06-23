@@ -252,9 +252,10 @@ layout: null
   const DEFAULT_STATE = { hp: 0, stress: 0, hope: 2 };
 
   let db, charRef, currentState = { ...DEFAULT_STATE }, unsubscribe = null;
-  let activeChar = CHARACTERS[0];
+  let activeChar = CHARACTERS[0], started = false;
 
   window.initApp = async function() {
+    if (started) return; started = true;
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
 
