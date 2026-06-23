@@ -186,8 +186,8 @@ layout: null
       await initPools();
       initPlayers();
       document.getElementById("sync-status").textContent = "Synced ✓";
-    } catch {
-      document.getElementById("sync-status").textContent = "Offline — check connection";
+    } catch(e) {
+      document.getElementById("sync-status").textContent = e.message || "Offline — check connection";
       document.getElementById("sync-status").classList.add("error");
     }
   };

@@ -212,8 +212,8 @@ layout: null
       renderList(snap.exists() ? snap.data().activeId : null);
       statusEl.textContent = "Synced ✓";
       onSnapshot(spotlightRef, (d) => renderList(d.exists() ? d.data().activeId : null));
-    } catch {
-      statusEl.textContent = "Offline — check connection";
+    } catch(e) {
+      statusEl.textContent = e.message || "Offline — check connection";
       statusEl.classList.add("error");
     }
   };

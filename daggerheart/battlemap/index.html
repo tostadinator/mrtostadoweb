@@ -218,8 +218,8 @@ layout: null
           renderTokens();
         }
       });
-    } catch {
-      document.getElementById("sync-status").textContent = "Offline — check connection";
+    } catch(e) {
+      document.getElementById("sync-status").textContent = e.message || "Offline — check connection";
       document.getElementById("sync-status").classList.add("error");
     }
   };

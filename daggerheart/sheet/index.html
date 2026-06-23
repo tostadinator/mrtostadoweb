@@ -337,8 +337,8 @@ layout: null
           renderPips();
         }
       });
-    } catch {
-      statusEl.textContent = "Offline — changes won't save";
+    } catch(e) {
+      statusEl.textContent = e.message || "Offline — changes won't save";
       statusEl.classList.add("error");
       renderPips();
     }
