@@ -8,12 +8,13 @@ layout: null
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Battle Map — Daggerheart</title>
 <style>
+  /* ── Base ─────────────────────────────────────────────────────────── */
   body {
     margin: 0;
     font-family: 'Georgia', serif;
     background: #0a0712;
     color: #e8e2f5;
-    padding: 16px;
+    padding: 16px 16px 106px;
   }
   .back-link { display: inline-block; color: #9b8bbf; font-size: 13px; text-decoration: none; margin-bottom: 12px; }
   .back-link:hover { color: #c9a8ff; }
@@ -21,6 +22,7 @@ layout: null
   .sync-status { text-align: center; font-size: 12px; color: #7fdca0; margin-bottom: 10px; min-height: 16px; }
   .sync-status.error { color: #ff8a8a; }
 
+  /* ── Controls ─────────────────────────────────────────────────────── */
   .controls {
     max-width: 900px; margin: 0 auto 12px; display: flex; gap: 8px;
     flex-wrap: wrap; justify-content: center;
@@ -35,6 +37,7 @@ layout: null
   }
   .controls button.danger { background: linear-gradient(135deg, #963e3e, #c96060); }
 
+  /* ── Map ──────────────────────────────────────────────────────────── */
   .map-wrap {
     max-width: 900px; margin: 0 auto;
     position: relative; border: 2px solid #5b3e96; border-radius: 12px; overflow: hidden;
@@ -55,17 +58,125 @@ layout: null
     cursor: grab; box-shadow: 0 0 10px rgba(170,120,255,0.5);
     user-select: none; touch-action: none;
   }
-  .token.enemy { border-color: #e3a0a0; background: #5c2a2a; }
+  .token.enemy { border-color: #e3a0a0; background: #5c2a2a; box-shadow: 0 0 10px rgba(220,80,80,0.4); }
+  .token.player-token:hover { box-shadow: 0 0 20px rgba(170,120,255,0.95); transform: scale(1.1); transition: all 0.1s; }
   .token:active { cursor: grabbing; }
   .token-label {
     position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
     font-size: 10px; white-space: nowrap; color: #c9a8ff;
   }
   .token.enemy .token-label { color: #e3a0a0; }
-
   .legend { max-width: 900px; margin: 10px auto; font-size: 12px; color: #9b8bbf; text-align: center; }
 
-  /* Password gate */
+  /* ── Party strip ──────────────────────────────────────────────────── */
+  #party-strip {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    height: 90px; background: #0d0a1a;
+    border-top: 2px solid #3a2a5c;
+    display: flex; align-items: stretch;
+    overflow-x: auto;
+  }
+  #fear-compact {
+    min-width: 72px; padding: 6px 10px;
+    border-right: 1px solid #3a2a5c;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    flex-shrink: 0;
+  }
+  .fear-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #e3a0a0; margin-bottom: 1px; }
+  .fear-pips-row { display: flex; gap: 3px; }
+  #player-strip-cards { display: flex; align-items: center; padding: 0 8px; gap: 6px; }
+  .strip-card {
+    min-width: 88px; padding: 6px 8px;
+    background: #1a1428; border: 1.5px solid #3a2a5c; border-radius: 10px;
+    cursor: pointer; flex-shrink: 0;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .strip-card:hover { border-color: #c9a8ff; box-shadow: 0 0 10px rgba(170,120,255,0.3); }
+  .strip-name { font-size: 10px; color: #c9a8ff; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .strip-pips-row { display: flex; gap: 2px; margin-bottom: 2px; }
+  .mini-pip {
+    width: 9px; height: 9px; border-radius: 50%;
+    border: 1.5px solid #5b3e96; background: transparent; flex-shrink: 0;
+  }
+  .mini-pip.filled { background: #c9a8ff; border-color: #c9a8ff; }
+  .mini-pip.fear-pip { border-color: #963e3e; }
+  .mini-pip.fear-pip.filled { background: #e3a0a0; border-color: #963e3e; }
+  .mini-pip.stress-pip { border-color: #c98a4a; }
+  .mini-pip.stress-pip.filled { background: #e3b06a; border-color: #c98a4a; }
+  .mini-pip.hope-pip { border-color: #4ac98a; }
+  .mini-pip.hope-pip.filled { background: #7fdca0; border-color: #4ac98a; }
+
+  /* ── Sheet drawer ─────────────────────────────────────────────────── */
+  #sheet-drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 200;
+    width: min(420px, 100vw);
+    background: radial-gradient(circle at top, #1b1330, #0a0712);
+    border-left: 2px solid #5b3e96;
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    overflow-y: auto; padding: 16px 20px 24px;
+    box-sizing: border-box;
+  }
+  #sheet-drawer.open { transform: translateX(0); }
+  #drawer-overlay {
+    position: fixed; inset: 0; z-index: 199;
+    background: rgba(0,0,0,0.5); display: none;
+  }
+  #drawer-overlay.visible { display: block; }
+
+  .drawer-header {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  #drawer-close {
+    background: transparent; border: 1.5px solid #5b3e96; color: #9b8bbf;
+    border-radius: 8px; padding: 5px 10px; font-size: 13px; cursor: pointer; flex-shrink: 0;
+  }
+  #drawer-close:hover { background: #3a2a5c; color: #c9a8ff; }
+
+  .char-picker { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+  .char-btn {
+    padding: 5px 11px; border-radius: 999px; border: 2px solid #5b3e96;
+    background: transparent; color: #9b8bbf; font-size: 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .char-btn.active { background: #5b3e96; color: #e8e2f5; font-weight: bold; }
+  .char-btn:hover { border-color: #c9a8ff; color: #c9a8ff; }
+
+  #drawer-char-name { text-align: center; color: #c9a8ff; margin: 4px 0 2px; font-size: 22px; font-weight: bold; }
+  #drawer-char-subtitle { text-align: center; color: #9b8bbf; font-size: 13px; margin-bottom: 8px; }
+  .portrait-frame { display: flex; justify-content: center; margin: 8px 0 12px; }
+  .portrait-img {
+    width: 100%; max-width: 280px; border-radius: 12px;
+    border: 2px solid #5b3e96; box-shadow: 0 0 24px rgba(170,120,255,0.45); display: block;
+  }
+  #drawer-sync-status { text-align: center; font-size: 12px; color: #7fdca0; margin-bottom: 8px; min-height: 16px; }
+  #drawer-sync-status.error { color: #ff8a8a; }
+
+  .section { margin-bottom: 14px; border-top: 1px solid #3a2a5c; padding-top: 10px; }
+  .section-title { color: #c9a8ff; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .traits { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .trait { background: #241a3a; border-radius: 8px; padding: 6px; text-align: center; }
+  .trait-name { font-size: 10px; color: #9b8bbf; }
+  .trait-val { font-size: 18px; font-weight: bold; color: #ffffff; }
+  .resource-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .resource-label { font-size: 13px; color: #d8cdf0; }
+  .pips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pip {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid #5b3e96; cursor: pointer; background: transparent; transition: all 0.15s;
+  }
+  .pip.filled { background: #c9a8ff; box-shadow: 0 0 8px #c9a8ff; }
+  .feature { background: #241a3a; border-radius: 8px; padding: 8px; margin-bottom: 6px; font-size: 12px; line-height: 1.4; }
+  .feature b { color: #c9a8ff; }
+  .roll-btn {
+    width: 100%; background: linear-gradient(135deg, #5b3e96, #8a5fc9);
+    color: white; border: none; border-radius: 10px; padding: 12px;
+    font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 4px;
+  }
+  .roll-btn:active { transform: scale(0.98); }
+  .roll-result { text-align: center; margin-top: 8px; font-size: 13px; min-height: 20px; }
+  .badge { display: inline-block; background: #3a2a5c; color: #c9a8ff; border-radius: 6px; padding: 2px 8px; font-size: 11px; margin-right: 4px; }
+
+  /* ── Auth gate ────────────────────────────────────────────────────── */
   #auth-gate {
     position: fixed; inset: 0; z-index: 9999;
     background: radial-gradient(circle at top, #1b1330, #0a0712);
@@ -101,16 +212,16 @@ layout: null
   </div>
 </div>
 
-<a href="../" class="back-link">← Back to Home</a>
+<a href="../" class="back-link">← Home</a>
 <h1>Battle Map</h1>
 <div class="sync-status" id="sync-status">Connecting...</div>
 
 <div class="controls">
-  <input type="text" id="bg-url" placeholder="Paste a map image URL (optional)" value="https://i.redd.it/g39kbyrmglpc1.jpeg">
+  <input type="text" id="bg-url" placeholder="Map image URL" value="https://i.redd.it/g39kbyrmglpc1.jpeg">
   <button id="set-bg-btn">Set Background</button>
   <button id="load-party-btn">⚔️ Load Party</button>
-  <button id="add-token-btn">+ Add Player</button>
-  <button id="add-enemy-btn">+ Add Enemy</button>
+  <button id="add-token-btn">+ Player</button>
+  <button id="add-enemy-btn">+ Enemy</button>
   <button id="clear-btn" class="danger">Clear Map</button>
 </div>
 
@@ -119,25 +230,84 @@ layout: null
   <div class="map-canvas" id="map-canvas"></div>
 </div>
 
-<div class="legend">Drag tokens to move them — positions sync live to everyone viewing this page.</div>
+<div class="legend">Tap a player token or a card in the strip to open their character sheet.</div>
+
+<!-- Party strip -->
+<div id="party-strip">
+  <div id="fear-compact">
+    <div class="fear-label">Fear</div>
+    <div class="fear-pips-row" id="fear-row-1"></div>
+    <div class="fear-pips-row" id="fear-row-2"></div>
+  </div>
+  <div id="player-strip-cards"></div>
+</div>
+
+<!-- Sheet drawer -->
+<div id="sheet-drawer">
+  <div class="drawer-header">
+    <button id="drawer-close">✕ Close</button>
+    <div class="char-picker" id="drawer-char-picker"></div>
+  </div>
+
+  <div id="drawer-char-name">—</div>
+  <div id="drawer-char-subtitle">—</div>
+  <div class="portrait-frame" id="drawer-portrait" style="display:none;">
+    <img class="portrait-img" id="drawer-portrait-img" src="" alt="Character portrait">
+  </div>
+  <div id="drawer-sync-status">—</div>
+
+  <div class="section">
+    <div class="section-title">Traits</div>
+    <div class="traits" id="drawer-traits-grid"></div>
+    <div id="drawer-stats-line" style="margin-top:8px; text-align:center; color:#9b8bbf; font-size:12px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Resources — tap to update</div>
+    <div class="resource-row">
+      <div class="resource-label">Hit Points (marked)</div>
+      <div class="pips" id="drawer-hp-pips"></div>
+    </div>
+    <div class="resource-row">
+      <div class="resource-label">Stress (marked)</div>
+      <div class="pips" id="drawer-stress-pips"></div>
+    </div>
+    <div class="resource-row">
+      <div class="resource-label">Hope</div>
+      <div class="pips" id="drawer-hope-pips"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Ancestry & Community Features</div>
+    <div id="drawer-features-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Domains</div>
+    <div id="drawer-domains-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Duality Dice</div>
+    <button class="roll-btn" id="drawer-roll-btn">Roll Hope & Fear (2d12)</button>
+    <div class="roll-result" id="drawer-roll-result"></div>
+  </div>
+</div>
+<div id="drawer-overlay"></div>
 
 <script>
   const PASSWORD_HASH = "5bfa0151f57207a3c1688bebe2568444a943842d5e7c42b7d4d0742b6f12baa1";
-
   async function sha256(msg) {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
   }
-
   async function checkAuth() {
     const stored = localStorage.getItem("dh_auth");
     if (stored === PASSWORD_HASH) { unlock(); return; }
     document.getElementById("pw-btn").addEventListener("click", attemptLogin);
-    document.getElementById("pw-input").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") attemptLogin();
-    });
+    document.getElementById("pw-input").addEventListener("keydown", (e) => { if (e.key === "Enter") attemptLogin(); });
   }
-
   async function attemptLogin() {
     const val = document.getElementById("pw-input").value;
     const hash = await sha256(val);
@@ -150,14 +320,11 @@ layout: null
       document.getElementById("pw-input").focus();
     }
   }
-
   function unlock() {
     const gate = document.getElementById("auth-gate");
     if (gate) gate.remove();
     if (typeof window.initApp === "function") window.initApp();
-    // else: module auto-starts below
   }
-
   checkAuth();
 </script>
 
@@ -174,29 +341,78 @@ layout: null
     appId: "1:880963026113:web:84697ee6ee18a2950fe840"
   };
 
+  const PARTY = [
+    { docId: "tostadinator", name: "Tostadinator", label: "TOS" },
+    { docId: "lola",         name: "Lola",         label: "LOL" },
+    { docId: "maya",         name: "Maya",         label: "MAY" },
+    { docId: "drew",         name: "Drew",         label: "DRW" },
+    { docId: "oli",          name: "Oli",          label: "OLI" },
+    { docId: "cal",          name: "Cal",          label: "CAL" },
+    { docId: "caleb",        name: "Caleb",        label: "CLB" },
+    { docId: "paul",         name: "Paul",         label: "PUL" },
+  ];
+
+  const CHARACTERS = [
+    {
+      docId: "tostadinator",
+      portrait: "/daggerheart/assets/tostadinator.jpg",
+      name: "Tostadinator",
+      ancestry: "Fungril • Underborne",
+      charClass: "Sorcerer (Primal Origin)",
+      traits: [
+        { name: "Agility",   val: "0"  },
+        { name: "Strength",  val: "-1" },
+        { name: "Finesse",   val: "0"  },
+        { name: "Instinct",  val: "+2" },
+        { name: "Presence",  val: "+1" },
+        { name: "Knowledge", val: "+1" },
+      ],
+      evasion: 10, proficiency: 1,
+      features: [
+        { name: "Fungril Network",  desc: "Instinct Roll (12) to communicate telepathically with other Fungril across any distance." },
+        { name: "Death Connection", desc: "Touching a recent corpse, mark a Stress to extract one memory tied to an emotion or sensation." },
+        { name: "Low-Light Living", desc: "Advantage on rolls to hide, investigate, or perceive in low light or heavy shadow." },
+      ],
+      domains: ["Arcana", "Midnight"],
+    },
+    { docId: "lola",  name: "Lola",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "maya",  name: "Maya",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "drew",  name: "Drew",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "oli",   name: "Oli",   ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "cal",   name: "Cal",   ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "caleb", name: "Caleb", ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "paul",  name: "Paul",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+  ];
+
   const DEFAULT_BG = "https://i.redd.it/g39kbyrmglpc1.jpeg";
-  let db, mapRef, mapState = { bgUrl: DEFAULT_BG, tokens: {} }, dragging = null;
+  const MAX_PIPS = 6;
+  const DEFAULT_CHAR_STATE = { hp: 0, stress: 0, hope: 2 };
+
+  let db, mapRef, poolsRef;
+  let mapState = { bgUrl: DEFAULT_BG, tokens: {} }, dragging = null, dragMoved = false;
   let tokenCounter = 1, started = false;
+  let sheetUnsub = null, activeDocId = null, activeCharState = { ...DEFAULT_CHAR_STATE };
+  let fearState = { fear: 0 };
+  const playerStates = {};
 
   window.initApp = async function() {
     if (started) return; started = true;
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
-    mapRef = doc(db, "battlemap", "current");
+    mapRef   = doc(db, "battlemap", "current");
+    poolsRef = doc(db, "party", "pools");
 
     bindDragEvents();
+    bindMapControls();
+    bindDrawerUI();
 
-    document.getElementById("set-bg-btn").onclick = async () => {
-      const url = document.getElementById("bg-url").value.trim();
-      mapState.bgUrl = url;
-      renderBg();
-      try { await updateDoc(mapRef, { bgUrl: url }); } catch {}
-    };
-    document.getElementById("load-party-btn").onclick = loadParty;
-    document.getElementById("add-token-btn").onclick = () => addToken("player");
-    document.getElementById("add-enemy-btn").onclick = () => addToken("enemy");
-    document.getElementById("clear-btn").onclick = clearMap;
+    await Promise.all([initMap(), initFearStrip(), initPlayerStrip()]);
+  };
 
+  // ── MAP ──────────────────────────────────────────────────────────────────
+
+  async function initMap() {
+    const statusEl = document.getElementById("sync-status");
     try {
       const snap = await getDoc(mapRef);
       if (!snap.exists()) {
@@ -210,8 +426,7 @@ layout: null
       }
       renderBg();
       renderTokens();
-      document.getElementById("sync-status").textContent = "Synced ✓";
-
+      statusEl.textContent = "Synced ✓";
       onSnapshot(mapRef, (docSnap) => {
         if (docSnap.exists() && !dragging) {
           mapState = { bgUrl: "", tokens: {}, ...docSnap.data() };
@@ -220,10 +435,10 @@ layout: null
         }
       });
     } catch(e) {
-      document.getElementById("sync-status").textContent = e.message || "Offline — check connection";
-      document.getElementById("sync-status").classList.add("error");
+      statusEl.textContent = e.message || "Offline — check connection";
+      statusEl.classList.add("error");
     }
-  };
+  }
 
   function renderBg() {
     const img = document.getElementById("map-bg");
@@ -238,7 +453,7 @@ layout: null
       const wrap = document.createElement("div");
       wrap.style.cssText = `position:absolute; left:${t.x ?? 50}px; top:${t.y ?? 50}px;`;
       const el = document.createElement("div");
-      el.className = "token" + (t.type === "enemy" ? " enemy" : "");
+      el.className = "token" + (t.type === "enemy" ? " enemy" : " player-token");
       el.textContent = t.label || "?";
       el.dataset.id = id;
       const lbl = document.createElement("div");
@@ -247,33 +462,42 @@ layout: null
       wrap.appendChild(el);
       wrap.appendChild(lbl);
       attachDrag(wrap, el, id);
+      if (t.type === "player") {
+        el.addEventListener("click", () => {
+          if (dragMoved) return;
+          const match = PARTY.find(p => p.label === t.label);
+          if (match) openSheet(match.docId);
+        });
+      }
       canvas.appendChild(wrap);
     });
   }
 
   function attachDrag(wrap, el, id) {
     function startDrag(clientX, clientY) {
+      dragMoved = false;
       const rect = document.getElementById("map-canvas").getBoundingClientRect();
       const tokenRect = wrap.getBoundingClientRect();
       dragging = { id, offsetX: clientX - tokenRect.left, offsetY: clientY - tokenRect.top, rect };
     }
-    el.addEventListener("mousedown", (e) => { e.preventDefault(); startDrag(e.clientX, e.clientY); });
+    el.addEventListener("mousedown",  (e) => { e.preventDefault(); startDrag(e.clientX, e.clientY); });
     el.addEventListener("touchstart", (e) => { const t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
   }
 
   function bindDragEvents() {
     function move(clientX, clientY) {
       if (!dragging) return;
+      dragMoved = true;
       const { id, offsetX, offsetY, rect } = dragging;
       let x = clientX - rect.left - offsetX;
       let y = clientY - rect.top - offsetY;
-      x = Math.max(0, Math.min(rect.width - 48, x));
+      x = Math.max(0, Math.min(rect.width  - 48, x));
       y = Math.max(0, Math.min(rect.height - 48, y));
       if (!mapState.tokens[id]) return;
       mapState.tokens[id].x = x;
       mapState.tokens[id].y = y;
-      const wrap = document.getElementById("map-canvas").querySelector(`[data-id="${id}"]`)?.parentElement;
-      if (wrap) { wrap.style.left = x + "px"; wrap.style.top = y + "px"; }
+      const w = document.getElementById("map-canvas").querySelector(`[data-id="${id}"]`)?.parentElement;
+      if (w) { w.style.left = x + "px"; w.style.top = y + "px"; }
     }
     async function endDrag() {
       if (!dragging) return;
@@ -285,27 +509,29 @@ layout: null
     }
     window.addEventListener("mousemove", (e) => move(e.clientX, e.clientY));
     window.addEventListener("mouseup", endDrag);
-    window.addEventListener("touchmove", (e) => { if (dragging) { const t = e.touches[0]; move(t.clientX, t.clientY); } }, { passive: true });
+    window.addEventListener("touchmove", (e) => { if (dragging) { const tt = e.touches[0]; move(tt.clientX, tt.clientY); } }, { passive: true });
     window.addEventListener("touchend", endDrag);
   }
 
+  function bindMapControls() {
+    document.getElementById("set-bg-btn").onclick = async () => {
+      const url = document.getElementById("bg-url").value.trim();
+      mapState.bgUrl = url; renderBg();
+      try { await updateDoc(mapRef, { bgUrl: url }); } catch {}
+    };
+    document.getElementById("load-party-btn").onclick = loadParty;
+    document.getElementById("add-token-btn").onclick  = () => addToken("player");
+    document.getElementById("add-enemy-btn").onclick  = () => addToken("enemy");
+    document.getElementById("clear-btn").onclick      = clearMap;
+  }
+
   async function loadParty() {
-    const PARTY = [
-      { name: "Tostadinator", label: "TOS" },
-      { name: "Lola",         label: "LOL" },
-      { name: "Maya",         label: "MAY" },
-      { name: "Drew",         label: "DRW" },
-      { name: "Oli",          label: "OLI" },
-      { name: "Cal",          label: "CAL" },
-      { name: "Caleb",        label: "CLB" },
-      { name: "Paul",         label: "PUL" },
-    ];
     const canvasWidth = document.getElementById("map-canvas").offsetWidth || 860;
     const spacing = Math.floor((canvasWidth - 80) / PARTY.length);
     const updates = {};
     PARTY.forEach((p, i) => {
       const id = "player-" + p.name.toLowerCase();
-      if (mapState.tokens[id]) return; // don't overwrite existing token
+      if (mapState.tokens[id]) return;
       const token = { x: 40 + i * spacing, y: 520, label: p.label, name: p.name, type: "player" };
       mapState.tokens[id] = token;
       updates[`tokens.${id}`] = token;
@@ -332,6 +558,207 @@ layout: null
     mapState.tokens = {};
     renderTokens();
     try { await updateDoc(mapRef, { tokens: {} }); } catch {}
+  }
+
+  // ── FEAR STRIP ────────────────────────────────────────────────────────────
+
+  async function initFearStrip() {
+    try {
+      const snap = await getDoc(poolsRef);
+      if (!snap.exists()) await setDoc(poolsRef, { fear: 0 });
+      else fearState = { ...fearState, ...snap.data() };
+      renderFearStrip();
+      onSnapshot(poolsRef, (d) => {
+        if (d.exists()) { fearState = { ...fearState, ...d.data() }; renderFearStrip(); }
+      });
+    } catch {}
+  }
+
+  function renderFearStrip() {
+    const row1 = document.getElementById("fear-row-1");
+    const row2 = document.getElementById("fear-row-2");
+    row1.innerHTML = ""; row2.innerHTML = "";
+    for (let i = 0; i < 12; i++) {
+      const pip = document.createElement("div");
+      pip.className = "mini-pip fear-pip" + (i < fearState.fear ? " filled" : "");
+      pip.title = `Fear ${i + 1}`;
+      pip.onclick = async () => {
+        const newVal = fearState.fear === i + 1 ? i : i + 1;
+        fearState.fear = newVal; renderFearStrip();
+        try { await updateDoc(poolsRef, { fear: newVal }); } catch {}
+      };
+      (i < 6 ? row1 : row2).appendChild(pip);
+    }
+  }
+
+  // ── PLAYER STRIP ──────────────────────────────────────────────────────────
+
+  function initPlayerStrip() {
+    const container = document.getElementById("player-strip-cards");
+    container.innerHTML = "";
+    PARTY.forEach(p => {
+      playerStates[p.docId] = { ...DEFAULT_CHAR_STATE };
+      const card = document.createElement("div");
+      card.className = "strip-card";
+      card.id = "strip-" + p.docId;
+      card.onclick = () => openSheet(p.docId);
+      container.appendChild(card);
+      renderStripCard(p.docId);
+      onSnapshot(doc(db, "characters", p.docId), (d) => {
+        playerStates[p.docId] = d.exists() ? { ...DEFAULT_CHAR_STATE, ...d.data() } : { ...DEFAULT_CHAR_STATE };
+        renderStripCard(p.docId);
+      });
+    });
+  }
+
+  function renderStripCard(docId) {
+    const p     = PARTY.find(x => x.docId === docId);
+    const state = playerStates[docId];
+    const card  = document.getElementById("strip-" + docId);
+    if (!card) return;
+    card.innerHTML = `
+      <div class="strip-name">${p.name}</div>
+      <div class="strip-pips-row">${miniPipsHTML(state.hp,     "")}</div>
+      <div class="strip-pips-row">${miniPipsHTML(state.stress, "stress-pip")}</div>
+      <div class="strip-pips-row">${miniPipsHTML(state.hope,   "hope-pip")}</div>`;
+  }
+
+  function miniPipsHTML(value, typeClass) {
+    return Array.from({ length: MAX_PIPS }, (_, i) =>
+      `<div class="mini-pip ${typeClass}${i < value ? " filled" : ""}"></div>`
+    ).join("");
+  }
+
+  // ── SHEET DRAWER ──────────────────────────────────────────────────────────
+
+  function bindDrawerUI() {
+    document.getElementById("drawer-close").onclick   = closeSheet;
+    document.getElementById("drawer-overlay").onclick = closeSheet;
+    document.getElementById("drawer-roll-btn").onclick = rollDice;
+  }
+
+  function openSheet(docId) {
+    const char = CHARACTERS.find(c => c.docId === docId);
+    if (!char) return;
+    activeDocId = docId;
+    renderStaticSheet(char);
+    subscribeSheetPips(docId);
+    document.getElementById("sheet-drawer").classList.add("open");
+    document.getElementById("drawer-overlay").classList.add("visible");
+  }
+
+  function closeSheet() {
+    if (sheetUnsub) { sheetUnsub(); sheetUnsub = null; }
+    document.getElementById("sheet-drawer").classList.remove("open");
+    document.getElementById("drawer-overlay").classList.remove("visible");
+  }
+
+  function renderStaticSheet(char) {
+    buildDrawerPicker(char.docId);
+    document.getElementById("drawer-char-name").textContent = char.name;
+    document.getElementById("drawer-char-subtitle").textContent = `${char.ancestry} • ${char.charClass}`;
+    const frame = document.getElementById("drawer-portrait");
+    const img   = document.getElementById("drawer-portrait-img");
+    if (char.portrait) { img.src = char.portrait; frame.style.display = "flex"; }
+    else frame.style.display = "none";
+    document.getElementById("drawer-traits-grid").innerHTML = char.traits.map(t =>
+      `<div class="trait"><div class="trait-name">${t.name}</div><div class="trait-val">${t.val}</div></div>`
+    ).join("");
+    document.getElementById("drawer-stats-line").innerHTML = char.traits.length
+      ? `Evasion: <span style="color:#c9a8ff;font-weight:bold;">${char.evasion}</span> &nbsp;|&nbsp; Proficiency: <span style="color:#c9a8ff;font-weight:bold;">${char.proficiency}</span>`
+      : "";
+    document.getElementById("drawer-features-list").innerHTML = char.features.length
+      ? char.features.map(f => `<div class="feature"><b>${f.name}:</b> ${f.desc}</div>`).join("")
+      : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No features listed yet.</div>`;
+    document.getElementById("drawer-domains-list").innerHTML = char.domains.length
+      ? char.domains.map(d => `<span class="badge">${d}</span>`).join("") +
+        `<div class="feature" style="margin-top:6px;"><i>Domain cards pending.</i></div>`
+      : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No domains listed yet.</div>`;
+    document.getElementById("drawer-roll-result").textContent = "";
+  }
+
+  function buildDrawerPicker(currentDocId) {
+    const picker = document.getElementById("drawer-char-picker");
+    picker.innerHTML = "";
+    CHARACTERS.forEach(c => {
+      const btn = document.createElement("button");
+      btn.className = "char-btn" + (c.docId === currentDocId ? " active" : "");
+      btn.textContent = c.name;
+      btn.onclick = () => openSheet(c.docId);
+      picker.appendChild(btn);
+    });
+  }
+
+  function subscribeSheetPips(docId) {
+    if (sheetUnsub) { sheetUnsub(); sheetUnsub = null; }
+    activeCharState = { ...DEFAULT_CHAR_STATE };
+    const ref = doc(db, "characters", docId);
+    const statusEl = document.getElementById("drawer-sync-status");
+    statusEl.textContent = "Loading...";
+    statusEl.classList.remove("error");
+    getDoc(ref).then(async (snap) => {
+      if (!snap.exists()) {
+        await setDoc(ref, DEFAULT_CHAR_STATE);
+        activeCharState = { ...DEFAULT_CHAR_STATE };
+      } else {
+        activeCharState = { ...DEFAULT_CHAR_STATE, ...snap.data() };
+      }
+      renderDrawerPips();
+      statusEl.textContent = "Synced ✓";
+      sheetUnsub = onSnapshot(ref, (d) => {
+        if (d.exists()) {
+          activeCharState = { ...DEFAULT_CHAR_STATE, ...d.data() };
+          renderDrawerPips();
+        }
+      });
+    }).catch(e => {
+      statusEl.textContent = e.message || "Offline";
+      statusEl.classList.add("error");
+    });
+  }
+
+  function renderDrawerPips() {
+    buildDrawerPips("drawer-hp-pips",     "hp");
+    buildDrawerPips("drawer-stress-pips", "stress");
+    buildDrawerPips("drawer-hope-pips",   "hope");
+  }
+
+  function buildDrawerPips(containerId, key) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = "";
+    for (let i = 0; i < MAX_PIPS; i++) {
+      const pip = document.createElement("div");
+      pip.className = "pip" + (i < activeCharState[key] ? " filled" : "");
+      pip.onclick = () => toggleDrawerPip(key, i);
+      container.appendChild(pip);
+    }
+  }
+
+  async function toggleDrawerPip(key, index) {
+    const newVal = activeCharState[key] === index + 1 ? index : index + 1;
+    activeCharState[key] = newVal;
+    renderDrawerPips();
+    const ref = doc(db, "characters", activeDocId);
+    const statusEl = document.getElementById("drawer-sync-status");
+    try {
+      await updateDoc(ref, { [key]: newVal });
+      statusEl.textContent = "Synced ✓";
+      statusEl.classList.remove("error");
+    } catch(e) {
+      statusEl.textContent = e.message || "Sync failed";
+      statusEl.classList.add("error");
+    }
+  }
+
+  function rollDice() {
+    const hope = Math.floor(Math.random() * 12) + 1;
+    const fear = Math.floor(Math.random() * 12) + 1;
+    let outcome;
+    if (hope === fear)    outcome = "💥 Critical! Both dice match.";
+    else if (hope > fear) outcome = "✨ Hope rises — you gain a Hope token.";
+    else                  outcome = "🌑 Fear rises — the GM gains a Fear token.";
+    document.getElementById("drawer-roll-result").innerHTML =
+      `Hope: <b>${hope}</b> &nbsp; Fear: <b>${fear}</b><br>${outcome}`;
   }
 
   if (!document.getElementById("auth-gate")) window.initApp();
