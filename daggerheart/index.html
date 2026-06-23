@@ -1,0 +1,215 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daggerheart — Home</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Georgia', serif;
+    background: radial-gradient(circle at top, #1b1330, #0a0712);
+    color: #e8e2f5;
+    padding: 24px;
+  }
+  .home { max-width: 600px; margin: 0 auto; }
+  h1 { text-align: center; color: #c9a8ff; font-size: 32px; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #9b8bbf; font-size: 14px; margin-bottom: 24px; }
+  .sync-status { text-align: center; font-size: 12px; color: #7fdca0; margin-bottom: 16px; min-height: 16px; }
+  .sync-status.error { color: #ff8a8a; }
+  .section-title {
+    color: #c9a8ff; font-size: 13px; text-transform: uppercase;
+    letter-spacing: 1px; margin: 24px 0 10px;
+  }
+  .nav-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .nav-card {
+    display: block; background: #1a1428; border: 2px solid #5b3e96;
+    border-radius: 14px; padding: 18px; text-align: center;
+    text-decoration: none; color: #e8e2f5;
+    box-shadow: 0 0 16px rgba(120,80,220,0.2);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .nav-card:hover { border-color: #c9a8ff; box-shadow: 0 0 24px rgba(170,120,255,0.4); }
+  .nav-card-icon { font-size: 26px; margin-bottom: 6px; }
+  .nav-card-label { font-size: 15px; font-weight: bold; color: #c9a8ff; }
+  .player-list { display: flex; flex-direction: column; gap: 10px; }
+  .player-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #1a1428; border: 2px solid #3a2a5c; border-radius: 12px;
+    padding: 12px 14px; color: #e8e2f5; transition: border-color 0.2s;
+  }
+  .player-row.spotlight { border-color: #c9a8ff; box-shadow: 0 0 14px rgba(170,120,255,0.4); }
+  .player-row-name { font-size: 16px; }
+  .player-row-class { font-size: 12px; color: #9b8bbf; }
+  .spotlight-btn {
+    background: #3a2a5c; color: #c9a8ff; border: none; border-radius: 8px;
+    padding: 6px 10px; font-size: 12px; cursor: pointer;
+  }
+  .spotlight-btn.active { background: #c9a8ff; color: #1a1428; font-weight: bold; }
+
+  /* Password gate */
+  #auth-gate {
+    position: fixed; inset: 0; z-index: 9999;
+    background: radial-gradient(circle at top, #1b1330, #0a0712);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gate-box { text-align: center; max-width: 320px; width: 100%; padding: 32px; }
+  .gate-title { font-size: 32px; color: #c9a8ff; margin-bottom: 4px; }
+  .gate-sub { font-size: 14px; color: #9b8bbf; margin-bottom: 28px; }
+  .gate-input {
+    width: 100%; box-sizing: border-box; padding: 12px 16px;
+    border-radius: 10px; border: 2px solid #5b3e96;
+    background: #1a1428; color: #e8e2f5; font-size: 16px;
+    outline: none; margin-bottom: 12px;
+  }
+  .gate-input:focus { border-color: #c9a8ff; }
+  .gate-btn {
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #5b3e96, #8a5fc9);
+    color: white; font-size: 15px; font-weight: bold; cursor: pointer;
+  }
+  .gate-error { color: #ff8a8a; font-size: 13px; margin-top: 10px; min-height: 18px; }
+</style>
+</head>
+<body>
+
+<div id="auth-gate">
+  <div class="gate-box">
+    <div class="gate-title">⚔️ Daggerheart</div>
+    <div class="gate-sub">Tostadinator's Party</div>
+    <input class="gate-input" id="pw-input" type="password" placeholder="Team password" autocomplete="current-password">
+    <button class="gate-btn" id="pw-btn">Enter</button>
+    <div class="gate-error" id="pw-error"></div>
+  </div>
+</div>
+
+<div class="home">
+  <h1>Daggerheart</h1>
+  <div class="subtitle">Tostadinator's Party</div>
+  <div class="sync-status" id="sync-status">Connecting...</div>
+
+  <div class="section-title">Group Tools</div>
+  <div class="nav-grid">
+    <a href="./sheet/" class="nav-card">
+      <div class="nav-card-icon">📜</div>
+      <div class="nav-card-label">My Sheet</div>
+    </a>
+    <a href="./party/" class="nav-card">
+      <div class="nav-card-icon">🛡️</div>
+      <div class="nav-card-label">Party Dashboard</div>
+    </a>
+    <a href="./battlemap/" class="nav-card">
+      <div class="nav-card-icon">🗺️</div>
+      <div class="nav-card-label">Battle Map</div>
+    </a>
+  </div>
+
+  <div class="section-title">Spotlight — Whose Turn?</div>
+  <div class="player-list" id="player-list"></div>
+</div>
+
+<script>
+  const PASSWORD_HASH = "5bfa0151f57207a3c1688bebe2568444a943842d5e7c42b7d4d0742b6f12baa1";
+
+  async function sha256(msg) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+
+  async function checkAuth() {
+    const stored = localStorage.getItem("dh_auth");
+    if (stored === PASSWORD_HASH) { unlock(); return; }
+    document.getElementById("pw-btn").addEventListener("click", attemptLogin);
+    document.getElementById("pw-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") attemptLogin();
+    });
+  }
+
+  async function attemptLogin() {
+    const val = document.getElementById("pw-input").value;
+    const hash = await sha256(val);
+    if (hash === PASSWORD_HASH) {
+      localStorage.setItem("dh_auth", hash);
+      unlock();
+    } else {
+      document.getElementById("pw-error").textContent = "Wrong password — try again.";
+      document.getElementById("pw-input").value = "";
+      document.getElementById("pw-input").focus();
+    }
+  }
+
+  function unlock() {
+    const gate = document.getElementById("auth-gate");
+    if (gate) gate.remove();
+    initApp();
+  }
+
+  checkAuth();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyArnMD-8q0InlTrHxRmvvKE5fx9dAn4PPQ",
+    authDomain: "daggerheart-1db7f.firebaseapp.com",
+    projectId: "daggerheart-1db7f",
+    storageBucket: "daggerheart-1db7f.firebasestorage.app",
+    messagingSenderId: "880963026113",
+    appId: "1:880963026113:web:84697ee6ee18a2950fe840"
+  };
+
+  const PLAYERS = [
+    { docId: "tostadinator", name: "Tostadinator", className: "Sorcerer (Primal)" },
+    // Add more players here as characters are created:
+    // { docId: "playerdocid", name: "Player Name", className: "Class" },
+  ];
+
+  let db, spotlightRef;
+
+  window.initApp = async function() {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    spotlightRef = doc(db, "party", "spotlight");
+    const statusEl = document.getElementById("sync-status");
+    const listEl = document.getElementById("player-list");
+
+    function renderList(activeId) {
+      listEl.innerHTML = "";
+      PLAYERS.forEach(p => {
+        const row = document.createElement("div");
+        row.className = "player-row" + (p.docId === activeId ? " spotlight" : "");
+        row.innerHTML = `
+          <div>
+            <div class="player-row-name">${p.name}</div>
+            <div class="player-row-class">${p.className}</div>
+          </div>
+          <button class="spotlight-btn ${p.docId === activeId ? "active" : ""}">
+            ${p.docId === activeId ? "In Spotlight" : "Give Spotlight"}
+          </button>`;
+        row.querySelector("button").onclick = async () => {
+          try { await setDoc(spotlightRef, { activeId: p.docId }); }
+          catch { statusEl.textContent = "Sync failed"; statusEl.classList.add("error"); }
+        };
+        listEl.appendChild(row);
+      });
+    }
+
+    try {
+      const snap = await getDoc(spotlightRef);
+      if (!snap.exists()) await setDoc(spotlightRef, { activeId: null });
+      renderList(snap.exists() ? snap.data().activeId : null);
+      statusEl.textContent = "Synced ✓";
+      onSnapshot(spotlightRef, (d) => renderList(d.exists() ? d.data().activeId : null));
+    } catch {
+      statusEl.textContent = "Offline — check connection";
+      statusEl.classList.add("error");
+    }
+  };
+</script>
+</body>
+</html>
