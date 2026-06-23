@@ -105,7 +105,7 @@ layout: null
 <div class="sync-status" id="sync-status">Connecting...</div>
 
 <div class="controls">
-  <input type="text" id="bg-url" placeholder="Paste a map image URL (optional)">
+  <input type="text" id="bg-url" placeholder="Paste a map image URL (optional)" value="https://i.redd.it/g39kbyrmglpc1.jpeg">
   <button id="set-bg-btn">Set Background</button>
   <button id="load-party-btn">⚔️ Load Party</button>
   <button id="add-token-btn">+ Add Player</button>
@@ -172,7 +172,8 @@ layout: null
     appId: "1:880963026113:web:84697ee6ee18a2950fe840"
   };
 
-  let db, mapRef, mapState = { bgUrl: "", tokens: {} }, dragging = null;
+  const DEFAULT_BG = "https://i.redd.it/g39kbyrmglpc1.jpeg";
+  let db, mapRef, mapState = { bgUrl: DEFAULT_BG, tokens: {} }, dragging = null;
   let tokenCounter = 1;
 
   window.initApp = async function() {
@@ -195,8 +196,15 @@ layout: null
 
     try {
       const snap = await getDoc(mapRef);
-      if (!snap.exists()) await setDoc(mapRef, mapState);
-      else mapState = { bgUrl: "", tokens: {}, ...snap.data() };
+      if (!snap.exists()) {
+        await setDoc(mapRef, mapState);
+      } else {
+        mapState = { bgUrl: DEFAULT_BG, tokens: {}, ...snap.data() };
+        if (!mapState.bgUrl) {
+          mapState.bgUrl = DEFAULT_BG;
+          await updateDoc(mapRef, { bgUrl: DEFAULT_BG });
+        }
+      }
       renderBg();
       renderTokens();
       document.getElementById("sync-status").textContent = "Synced ✓";
