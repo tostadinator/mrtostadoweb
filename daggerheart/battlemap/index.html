@@ -153,7 +153,8 @@ layout: null
   function unlock() {
     const gate = document.getElementById("auth-gate");
     if (gate) gate.remove();
-    initApp();
+    if (typeof window.initApp === "function") window.initApp();
+    // else: module auto-starts below
   }
 
   checkAuth();
@@ -330,6 +331,8 @@ layout: null
     renderTokens();
     try { await updateDoc(mapRef, { tokens: {} }); } catch {}
   }
+
+  if (!document.getElementById("auth-gate")) window.initApp();
 </script>
 </body>
 </html>
