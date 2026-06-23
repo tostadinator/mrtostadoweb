@@ -48,9 +48,14 @@ layout: null
   .trait-val { font-size: 20px; font-weight: bold; color: #ffffff; }
   .resource-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .resource-label { font-size: 14px; color: #d8cdf0; }
-  .pips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .portrait-frame { display: flex; justify-content: center; margin: 10px 0 16px; }
+  .portrait-img {
+    width: 100%; max-width: 320px; border-radius: 12px;
+    border: 2px solid #5b3e96; box-shadow: 0 0 24px rgba(170,120,255,0.45); display: block;
+  }
+  .pips { display: flex; gap: 6px; flex-wrap: wrap; }
   .pip {
-    width: 30px; height: 30px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 50%;
     border: 2px solid #5b3e96; cursor: pointer; background: transparent;
     transition: all 0.15s;
   }
@@ -110,6 +115,9 @@ layout: null
   <div class="card">
     <h1 id="char-name">—</h1>
     <div class="subtitle" id="char-subtitle">—</div>
+    <div class="portrait-frame" id="char-portrait" style="display:none;">
+      <img class="portrait-img" id="char-portrait-img" src="" alt="Character portrait">
+    </div>
     <div class="sync-status" id="sync-status">Connecting...</div>
 
     <div class="section">
@@ -208,6 +216,7 @@ layout: null
   const CHARACTERS = [
     {
       docId: "tostadinator",
+      portrait: "/daggerheart/assets/tostadinator.jpg",
       name: "Tostadinator",
       ancestry: "Fungril • Underborne",
       charClass: "Sorcerer (Primal Origin)",
@@ -278,6 +287,14 @@ layout: null
     // Render static info
     document.getElementById("char-name").textContent = char.name;
     document.getElementById("char-subtitle").textContent = `${char.ancestry} • ${char.charClass}`;
+    const portraitFrame = document.getElementById("char-portrait");
+    const portraitImg   = document.getElementById("char-portrait-img");
+    if (char.portrait) {
+      portraitImg.src = char.portrait;
+      portraitFrame.style.display = "flex";
+    } else {
+      portraitFrame.style.display = "none";
+    }
 
     const traitsGrid = document.getElementById("traits-grid");
     traitsGrid.innerHTML = char.traits.map(t =>
