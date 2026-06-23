@@ -107,6 +107,7 @@ layout: null
 <div class="controls">
   <input type="text" id="bg-url" placeholder="Paste a map image URL (optional)">
   <button id="set-bg-btn">Set Background</button>
+  <button id="load-party-btn">⚔️ Load Party</button>
   <button id="add-token-btn">+ Add Player</button>
   <button id="add-enemy-btn">+ Add Enemy</button>
   <button id="clear-btn" class="danger">Clear Map</button>
@@ -187,6 +188,7 @@ layout: null
       renderBg();
       try { await updateDoc(mapRef, { bgUrl: url }); } catch {}
     };
+    document.getElementById("load-party-btn").onclick = loadParty;
     document.getElementById("add-token-btn").onclick = () => addToken("player");
     document.getElementById("add-enemy-btn").onclick = () => addToken("enemy");
     document.getElementById("clear-btn").onclick = clearMap;
@@ -274,6 +276,33 @@ layout: null
     window.addEventListener("mouseup", endDrag);
     window.addEventListener("touchmove", (e) => { if (dragging) { const t = e.touches[0]; move(t.clientX, t.clientY); } }, { passive: true });
     window.addEventListener("touchend", endDrag);
+  }
+
+  async function loadParty() {
+    const PARTY = [
+      { name: "Tostadinator", label: "TOS" },
+      { name: "Lola",         label: "LOL" },
+      { name: "Maya",         label: "MAY" },
+      { name: "Drew",         label: "DRW" },
+      { name: "Oli",          label: "OLI" },
+      { name: "Cal",          label: "CAL" },
+      { name: "Caleb",        label: "CLB" },
+      { name: "Paul",         label: "PUL" },
+    ];
+    const canvasWidth = document.getElementById("map-canvas").offsetWidth || 860;
+    const spacing = Math.floor((canvasWidth - 80) / PARTY.length);
+    const updates = {};
+    PARTY.forEach((p, i) => {
+      const id = "player-" + p.name.toLowerCase();
+      if (mapState.tokens[id]) return; // don't overwrite existing token
+      const token = { x: 40 + i * spacing, y: 520, label: p.label, name: p.name, type: "player" };
+      mapState.tokens[id] = token;
+      updates[`tokens.${id}`] = token;
+    });
+    renderTokens();
+    if (Object.keys(updates).length) {
+      try { await updateDoc(mapRef, updates); } catch {}
+    }
   }
 
   async function addToken(type) {
