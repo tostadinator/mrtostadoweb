@@ -513,7 +513,7 @@ layout: null
         playerStates[p.docId] = data;
         renderStripCard(p.docId);
         if (activeDocId === p.docId && document.getElementById("sheet-drawer").classList.contains("open")) {
-          renderStaticSheet(charData[p.docId]);
+          renderStaticSheet(p.docId);
         }
       });
     });
@@ -544,13 +544,23 @@ layout: null
     document.getElementById("drawer-overlay").onclick = closeSheet;
   }
 
-  function openSheet(docId) {
+  async function openSheet(docId) {
     activeDocId = docId;
-    const char = charData[docId] || { ...DEFAULT_CHAR, name: PARTY.find(p => p.docId === docId)?.name || docId };
-    renderStaticSheet(char);
+    // Render immediately with whatever is cached
+    renderStaticSheet(docId);
     subscribeSheetPips(docId);
     document.getElementById("sheet-drawer").classList.add("open");
     document.getElementById("drawer-overlay").classList.add("visible");
+    // If static fields are missing (seed not yet run from GM Tools), fetch directly
+    if (!charData[docId]?.portrait && !charData[docId]?.traits?.length) {
+      try {
+        const snap = await getDoc(doc(db, "characters", docId));
+        if (snap.exists()) {
+          charData[docId] = { ...DEFAULT_CHAR, ...snap.data() };
+          if (activeDocId === docId) renderStaticSheet(docId);
+        }
+      } catch {}
+    }
   }
 
   function closeSheet() {
@@ -559,24 +569,25 @@ layout: null
     document.getElementById("drawer-overlay").classList.remove("visible");
   }
 
-  function renderStaticSheet(char) {
-    buildDrawerPicker(char.docId);
-    document.getElementById("drawer-char-name").textContent = char.name;
-    document.getElementById("drawer-char-subtitle").textContent = `${char.ancestry} • ${char.charClass}`;
+  function renderStaticSheet(docId) {
+    const char = charData[docId] || { ...DEFAULT_CHAR, name: PARTY.find(p => p.docId === docId)?.name || docId };
+    buildDrawerPicker(docId);
+    document.getElementById("drawer-char-name").textContent = char.name || docId;
+    document.getElementById("drawer-char-subtitle").textContent = `${char.ancestry || "—"} • ${char.charClass || "—"}`;
     const frame = document.getElementById("drawer-portrait");
     const img   = document.getElementById("drawer-portrait-img");
     if (char.portrait) { img.src = char.portrait; frame.style.display = "flex"; }
     else frame.style.display = "none";
-    document.getElementById("drawer-traits-grid").innerHTML = char.traits.map(t =>
+    document.getElementById("drawer-traits-grid").innerHTML = (char.traits || []).map(t =>
       `<div class="trait"><div class="trait-name">${t.name}</div><div class="trait-val">${t.val}</div></div>`
     ).join("");
-    document.getElementById("drawer-stats-line").innerHTML = char.traits.length
+    document.getElementById("drawer-stats-line").innerHTML = (char.traits || []).length
       ? `Evasion: <span style="color:#c9a8ff;font-weight:bold;">${char.evasion}</span> &nbsp;|&nbsp; Proficiency: <span style="color:#c9a8ff;font-weight:bold;">${char.proficiency}</span>`
       : "";
-    document.getElementById("drawer-features-list").innerHTML = char.features.length
+    document.getElementById("drawer-features-list").innerHTML = (char.features || []).length
       ? char.features.map(f => `<div class="feature"><b>${f.name}:</b> ${f.desc}</div>`).join("")
       : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No features listed yet.</div>`;
-    document.getElementById("drawer-domains-list").innerHTML = char.domains.length
+    document.getElementById("drawer-domains-list").innerHTML = (char.domains || []).length
       ? char.domains.map(d => `<span class="badge">${d}</span>`).join("") +
         `<div class="feature" style="margin-top:6px;"><i>Domain cards pending.</i></div>`
       : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No domains listed yet.</div>`;
