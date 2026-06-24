@@ -534,7 +534,7 @@ layout: null
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyArnMD-8q0InlTrHxRmvvKE5fx9dAn4PPQ",
@@ -982,6 +982,7 @@ layout: null
       card.querySelector(".delete-btn").onclick = async () => {
         adversaries = adversaries.filter(a => a.id !== adv.id);
         try { await updateDoc(advRef, { items: adversaries }); } catch {}
+        try { await updateDoc(mapRef, { [`tokens.enemy-${adv.id}`]: deleteField() }); } catch {}
       };
       card.querySelector(".add-map-btn").onclick = () => addToMap(adv);
 
