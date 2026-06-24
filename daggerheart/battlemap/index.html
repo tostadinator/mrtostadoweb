@@ -22,17 +22,6 @@ layout: null
   .sync-status { text-align: center; font-size: 12px; color: #7fdca0; margin-bottom: 10px; min-height: 16px; }
   .sync-status.error { color: #ff8a8a; }
 
-  /* ── Controls ─────────────────────────────────────────────────────── */
-  .controls {
-    max-width: 1400px; margin: 0 auto 12px; display: flex; gap: 8px;
-    flex-wrap: wrap; justify-content: center;
-  }
-  .controls button {
-    background: linear-gradient(135deg, #5b3e96, #8a5fc9); color: white;
-    border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px;
-  }
-  .controls button.danger { background: linear-gradient(135deg, #963e3e, #c96060); }
-
   /* ── Map ──────────────────────────────────────────────────────────── */
   .map-wrap {
     max-width: 1400px; margin: 0 auto;
@@ -55,6 +44,7 @@ layout: null
     user-select: none; touch-action: none;
   }
   .token.enemy { border-color: #e3a0a0; background: #5c2a2a; box-shadow: 0 0 10px rgba(220,80,80,0.4); }
+  .token.in-spotlight { border-color: #ffd700; box-shadow: 0 0 18px rgba(255,215,0,0.9); }
   .token.player-token:hover { box-shadow: 0 0 20px rgba(170,120,255,0.95); transform: scale(1.1); transition: all 0.1s; }
   .token:active { cursor: grabbing; }
   .token-label {
@@ -204,13 +194,6 @@ layout: null
 <a href="../" class="back-link">← Home</a>
 <h1>Battle Map</h1>
 <div class="sync-status" id="sync-status">Connecting...</div>
-
-<div class="controls">
-  <button id="load-party-btn">⚔️ Load Party</button>
-  <button id="add-token-btn">+ Player</button>
-  <button id="add-enemy-btn">+ Enemy</button>
-  <button id="clear-btn" class="danger">Clear Map</button>
-</div>
 
 <div class="map-wrap" id="map-wrap">
   <img id="map-bg" class="map-bg" src="" alt="" style="display:none;">
@@ -370,23 +353,29 @@ layout: null
   const MAX_PIPS = 6;
   const DEFAULT_CHAR_STATE = { hp: 0, stress: 0, hope: 2 };
 
-  let db, mapRef, poolsRef;
+  let db, mapRef, poolsRef, spotlightRef;
   let mapState = { bgUrl: DEFAULT_BG, tokens: {} }, dragging = null, dragMoved = false;
   let tokenCounter = 1, started = false;
   let sheetUnsub = null, activeDocId = null, activeCharState = { ...DEFAULT_CHAR_STATE };
   let fearState = { fear: 0 };
+  let spotlightDocId = null;
   const playerStates = {};
 
   window.initApp = async function() {
     if (started) return; started = true;
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
-    mapRef   = doc(db, "battlemap", "current");
-    poolsRef = doc(db, "party", "pools");
+    mapRef       = doc(db, "battlemap", "current");
+    poolsRef     = doc(db, "party", "pools");
+    spotlightRef = doc(db, "party", "spotlight");
 
     bindDragEvents();
-    bindMapControls();
     bindDrawerUI();
+
+    onSnapshot(spotlightRef, (d) => {
+      spotlightDocId = d.exists() ? d.data().activeId : null;
+      renderTokens();
+    });
 
     await Promise.all([initMap(), initFearStrip(), initPlayerStrip()]);
   };
@@ -435,7 +424,9 @@ layout: null
       const wrap = document.createElement("div");
       wrap.style.cssText = `position:absolute; left:${t.x ?? 50}px; top:${t.y ?? 50}px;`;
       const el = document.createElement("div");
-      el.className = "token" + (t.type === "enemy" ? " enemy" : " player-token");
+      const isSpotlit = t.type === "player" &&
+        PARTY.find(p => p.name === t.name)?.docId === spotlightDocId;
+      el.className = "token" + (t.type === "enemy" ? " enemy" : " player-token") + (isSpotlit ? " in-spotlight" : "");
       el.textContent = t.label || "?";
       el.dataset.id = id;
       const lbl = document.createElement("div");
@@ -493,48 +484,6 @@ layout: null
     window.addEventListener("mouseup", endDrag);
     window.addEventListener("touchmove", (e) => { if (dragging) { const tt = e.touches[0]; move(tt.clientX, tt.clientY); } }, { passive: true });
     window.addEventListener("touchend", endDrag);
-  }
-
-  function bindMapControls() {
-    document.getElementById("load-party-btn").onclick = loadParty;
-    document.getElementById("add-token-btn").onclick  = () => addToken("player");
-    document.getElementById("add-enemy-btn").onclick  = () => addToken("enemy");
-    document.getElementById("clear-btn").onclick      = clearMap;
-  }
-
-  async function loadParty() {
-    const canvasWidth = document.getElementById("map-canvas").offsetWidth || 860;
-    const spacing = Math.floor((canvasWidth - 80) / PARTY.length);
-    const updates = {};
-    PARTY.forEach((p, i) => {
-      const id = "player-" + p.name.toLowerCase();
-      if (mapState.tokens[id]) return;
-      const token = { x: 40 + i * spacing, y: 520, label: p.label, name: p.name, type: "player" };
-      mapState.tokens[id] = token;
-      updates[`tokens.${id}`] = token;
-    });
-    renderTokens();
-    if (Object.keys(updates).length) {
-      try { await updateDoc(mapRef, updates); } catch {}
-    }
-  }
-
-  async function addToken(type) {
-    const label = prompt(`Name for this ${type} token?`, type === "enemy" ? "Enemy" : "Player");
-    if (!label) return;
-    const id = type + "-" + Date.now();
-    const short = label.slice(0, 3).toUpperCase();
-    mapState.tokens[id] = { x: 60 + tokenCounter * 10, y: 60 + tokenCounter * 10, label: short, name: label, type };
-    tokenCounter++;
-    renderTokens();
-    try { await updateDoc(mapRef, { [`tokens.${id}`]: mapState.tokens[id] }); } catch {}
-  }
-
-  async function clearMap() {
-    if (!confirm("Clear all tokens from the map?")) return;
-    mapState.tokens = {};
-    renderTokens();
-    try { await updateDoc(mapRef, { tokens: {} }); } catch {}
   }
 
   // ── FEAR STRIP ────────────────────────────────────────────────────────────

@@ -298,7 +298,13 @@ layout: null
       <div class="adv-form-field"><label class="adv-form-label">Presence</label><input id="adv-pre" type="text" value="0" class="short"></div>
       <div class="adv-form-field"><label class="adv-form-label">Knowledge</label><input id="adv-kno" type="text" value="0" class="short"></div>
     </div>
-    <button class="create-adv-btn" id="create-adv-btn">Create Adversary</button>
+    <div class="adv-form-row" style="align-items:center;gap:10px;">
+      <div class="adv-form-field">
+        <label class="adv-form-label">Quantity</label>
+        <input id="adv-qty" type="number" value="1" min="1" max="10" class="short">
+      </div>
+      <button class="create-adv-btn" id="create-adv-btn" style="flex:1;margin-top:14px;">Create &amp; Add to Map</button>
+    </div>
   </div>
   <div class="adversary-grid" id="adversary-grid"></div>
 </div>
@@ -660,7 +666,7 @@ layout: null
           <div class="pips" id="adv-pips-${adv.id}"></div>
         </div>
         <div class="adversary-actions">
-          <button class="add-map-btn">Add to Map</button>
+          <button class="add-map-btn">Add to Map Again</button>
         </div>`;
 
       card.querySelector(".delete-btn").onclick = async () => {
@@ -698,26 +704,38 @@ layout: null
   async function createAdversary() {
     const name = document.getElementById("adv-name").value.trim();
     if (!name) { document.getElementById("adv-name").focus(); return; }
-    const maxHp = parseInt(document.getElementById("adv-maxhp").value) || 4;
-    const adv = {
-      id: "adv-" + Date.now(),
-      name,
-      maxHp,
-      currentHp:   maxHp,
-      evasion:     parseInt(document.getElementById("adv-evasion").value) || 10,
-      proficiency: parseInt(document.getElementById("adv-prof").value)    || 1,
-      traits: {
-        agility:   document.getElementById("adv-agi").value.trim() || "0",
-        strength:  document.getElementById("adv-str").value.trim() || "0",
-        finesse:   document.getElementById("adv-fin").value.trim() || "0",
-        instinct:  document.getElementById("adv-ins").value.trim() || "0",
-        presence:  document.getElementById("adv-pre").value.trim() || "0",
-        knowledge: document.getElementById("adv-kno").value.trim() || "0",
-      }
+    const maxHp     = parseInt(document.getElementById("adv-maxhp").value)   || 4;
+    const evasion   = parseInt(document.getElementById("adv-evasion").value) || 10;
+    const prof      = parseInt(document.getElementById("adv-prof").value)    || 1;
+    const qty       = Math.max(1, Math.min(10, parseInt(document.getElementById("adv-qty").value) || 1));
+    const traits = {
+      agility:   document.getElementById("adv-agi").value.trim() || "0",
+      strength:  document.getElementById("adv-str").value.trim() || "0",
+      finesse:   document.getElementById("adv-fin").value.trim() || "0",
+      instinct:  document.getElementById("adv-ins").value.trim() || "0",
+      presence:  document.getElementById("adv-pre").value.trim() || "0",
+      knowledge: document.getElementById("adv-kno").value.trim() || "0",
     };
-    adversaries = [...adversaries, adv];
+
+    const newEntries = [];
+    for (let i = 0; i < qty; i++) {
+      newEntries.push({
+        id: "adv-" + Date.now() + "-" + i,
+        name: qty > 1 ? `${name} ${i + 1}` : name,
+        maxHp, currentHp: maxHp, evasion, proficiency: prof, traits
+      });
+    }
+
+    adversaries = [...adversaries, ...newEntries];
     try { await updateDoc(advRef, { items: adversaries }); } catch {}
+
+    // Place each on the map automatically
+    for (let i = 0; i < newEntries.length; i++) {
+      await addToMap(newEntries[i], i);
+    }
+
     document.getElementById("adv-name").value = "";
+    document.getElementById("adv-qty").value = "1";
     ["adv-agi","adv-str","adv-fin","adv-ins","adv-pre","adv-kno"].forEach(id => {
       document.getElementById(id).value = "0";
     });
@@ -725,16 +743,19 @@ layout: null
     document.getElementById("adv-form").classList.remove("open");
   }
 
-  async function addToMap(adv) {
-    const label = adv.name.slice(0, 3).toUpperCase();
+  async function addToMap(adv, index = 0) {
+    const label   = adv.name.slice(0, 3).toUpperCase();
     const tokenId = "enemy-" + adv.id;
-    const token = { x: 60, y: 60, label, name: adv.name, type: "enemy" };
+    const token   = { x: 80 + index * 50, y: 80, label, name: adv.name, type: "enemy" };
     try {
+      // Try to add to existing doc
       await updateDoc(mapRef, { [`tokens.${tokenId}`]: token });
     } catch (e) {
-      if (e.code === "not-found") {
-        await setDoc(mapRef, { bgUrl: "", tokens: { [tokenId]: token } }).catch(() => {});
-      }
+      // Doc doesn't exist yet — create it, then add token
+      try {
+        await setDoc(mapRef, { bgUrl: "", tokens: {} });
+        await updateDoc(mapRef, { [`tokens.${tokenId}`]: token });
+      } catch {}
     }
   }
 
