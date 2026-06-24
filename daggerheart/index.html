@@ -122,7 +122,7 @@ layout: null
   /* ── Adversary section ───────────────────────────────────────────────── */
   .adversary-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 12px;
   }
   .adversary-card {
@@ -131,17 +131,24 @@ layout: null
   }
   .adversary-card:hover { border-color: #963e3e; }
   .adversary-name-row {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;
   }
   .adversary-name { font-size: 16px; font-weight: bold; color: #e3a0a0; }
-  .adv-trait-grid {
-    display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; margin-bottom: 6px;
+  .adv-subtitle { font-size: 12px; color: #c98a8a; margin-bottom: 4px; }
+  .adv-description { font-size: 11px; color: #9b6e6e; font-style: italic; margin-bottom: 8px; line-height: 1.4; }
+  .adv-stat-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 8px;
   }
-  .adv-trait-cell { background: #1e0808; border-radius: 5px; padding: 3px 2px; text-align: center; }
-  .adv-stats-line { font-size: 11px; color: #c98a8a; margin-bottom: 6px; }
+  .adv-stat-cell { background: #1e0808; border-radius: 5px; padding: 4px 2px; text-align: center; }
+  .adv-stat-label { font-size: 9px; color: #9b6e6e; text-transform: uppercase; letter-spacing: 0.5px; }
+  .adv-stat-val { font-size: 14px; font-weight: bold; color: #e3a0a0; }
+  .adv-attack-line { font-size: 11px; color: #c98a8a; margin-bottom: 4px; }
+  .adv-stats-line { font-size: 11px; color: #c98a8a; margin-bottom: 4px; }
   .adv-stats-line span { color: #e3a0a0; font-weight: bold; }
   .pip.hp-adv { border-color: #963e3e; }
   .pip.hp-adv.filled { background: #e3a0a0; border-color: #963e3e; box-shadow: 0 0 5px #963e3e; }
+  .pip.stress-adv { border-color: #c98a4a; }
+  .pip.stress-adv.filled { background: #e3b06a; border-color: #c98a4a; box-shadow: 0 0 5px #c98a4a; }
   .adversary-actions { display: flex; gap: 6px; margin-top: 8px; }
   .add-map-btn {
     flex: 1; background: linear-gradient(135deg, #963e3e, #c96060); color: white;
@@ -152,6 +159,17 @@ layout: null
     border-radius: 8px; padding: 7px 10px; font-size: 12px; cursor: pointer;
   }
   .delete-btn:hover { background: #963e3e; color: #fff; }
+  details.adv-features { margin: 6px 0; }
+  details.adv-features summary {
+    font-size: 11px; color: #c98a8a; cursor: pointer; user-select: none;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  details.adv-features summary:hover { color: #e3a0a0; }
+  .adv-feature-item {
+    background: #1e0808; border-radius: 7px; padding: 6px 8px; margin-top: 4px;
+    font-size: 11px; color: #c98a8a; line-height: 1.4;
+  }
+  .adv-feature-item b { color: #e3a0a0; }
 
   /* Adversary create form */
   .adv-form-toggle {
@@ -168,14 +186,26 @@ layout: null
   .adv-form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: flex-end; }
   .adv-form-field { display: flex; flex-direction: column; }
   .adv-form-label { font-size: 10px; color: #c98a8a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
-  .adv-form input {
+  .adv-form input, .adv-form select {
     padding: 7px 10px; border-radius: 7px; border: 1.5px solid #5c2a2a;
     background: #0a0404; color: #e8e2f5; font-size: 13px; outline: none;
   }
-  .adv-form input:focus { border-color: #963e3e; }
+  .adv-form input:focus, .adv-form select:focus { border-color: #963e3e; }
   .adv-form input.wide { flex: 1; }
-  .adv-form input.short { width: 48px; }
+  .adv-form input.short { width: 52px; }
+  .adv-form select.short { width: 90px; }
   .adv-trait-inputs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 10px; }
+  .adv-feat-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: flex-end; }
+  .adv-feat-row input { padding: 6px 8px; border-radius: 6px; border: 1.5px solid #5c2a2a; background: #0a0404; color: #e8e2f5; font-size: 12px; outline: none; }
+  .adv-feat-row input:focus { border-color: #963e3e; }
+  .adv-feat-row select { padding: 6px 6px; border-radius: 6px; border: 1.5px solid #5c2a2a; background: #0a0404; color: #e8e2f5; font-size: 12px; outline: none; width: 110px; flex-shrink: 0; }
+  .adv-feat-name { width: 28%; flex-shrink: 0; }
+  .adv-feat-desc { flex: 1; }
+  .adv-add-feat-btn {
+    width: 100%; background: transparent; color: #c98a8a;
+    border: 1.5px dashed #5c2a2a; border-radius: 8px; padding: 7px; font-size: 12px; cursor: pointer; margin-bottom: 10px;
+  }
+  .adv-add-feat-btn:hover { border-color: #963e3e; color: #e3a0a0; }
   .create-adv-btn {
     width: 100%; background: linear-gradient(135deg, #963e3e, #c96060); color: white;
     border: none; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: bold; cursor: pointer;
@@ -327,32 +357,86 @@ layout: null
     <div class="adv-form-row">
       <div class="adv-form-field" style="flex:1;">
         <label class="adv-form-label">Name</label>
-        <input id="adv-name" type="text" placeholder="e.g. Goblin Scout" class="wide">
+        <input id="adv-name" type="text" placeholder="e.g. Bear" class="wide">
       </div>
     </div>
     <div class="adv-form-row">
       <div class="adv-form-field">
-        <label class="adv-form-label">Max HP</label>
-        <input id="adv-maxhp" type="number" value="4" min="1" max="20" class="short">
+        <label class="adv-form-label">Tier</label>
+        <input id="adv-tier" type="number" value="1" min="1" max="4" class="short">
       </div>
-      <div class="adv-form-field">
-        <label class="adv-form-label">Evasion</label>
-        <input id="adv-evasion" type="number" value="10" class="short">
-      </div>
-      <div class="adv-form-field">
-        <label class="adv-form-label">Prof.</label>
-        <input id="adv-prof" type="number" value="1" class="short">
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Role</label>
+        <input id="adv-role" type="text" placeholder="Bruiser, Skulk, Leader…" class="wide">
       </div>
     </div>
-    <div class="adv-trait-inputs">
-      <div class="adv-form-field"><label class="adv-form-label">Agility</label><input id="adv-agi" type="text" value="0" class="short"></div>
-      <div class="adv-form-field"><label class="adv-form-label">Strength</label><input id="adv-str" type="text" value="0" class="short"></div>
-      <div class="adv-form-field"><label class="adv-form-label">Finesse</label><input id="adv-fin" type="text" value="0" class="short"></div>
-      <div class="adv-form-field"><label class="adv-form-label">Instinct</label><input id="adv-ins" type="text" value="0" class="short"></div>
-      <div class="adv-form-field"><label class="adv-form-label">Presence</label><input id="adv-pre" type="text" value="0" class="short"></div>
-      <div class="adv-form-field"><label class="adv-form-label">Knowledge</label><input id="adv-kno" type="text" value="0" class="short"></div>
+    <div class="adv-form-row">
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Description</label>
+        <input id="adv-desc" type="text" placeholder="A large bear with thick fur…" class="wide">
+      </div>
     </div>
-    <div class="adv-form-row" style="align-items:center;gap:10px;">
+    <div class="adv-form-row">
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Motives &amp; Tactics</label>
+        <input id="adv-motives" type="text" placeholder="Climb, defend territory, pummel…" class="wide">
+      </div>
+    </div>
+    <div class="adv-form-row">
+      <div class="adv-form-field">
+        <label class="adv-form-label">Difficulty</label>
+        <input id="adv-difficulty" type="number" value="12" class="short">
+      </div>
+      <div class="adv-form-field">
+        <label class="adv-form-label">Minor Thr.</label>
+        <input id="adv-minor" type="number" value="6" class="short">
+      </div>
+      <div class="adv-form-field">
+        <label class="adv-form-label">Major Thr.</label>
+        <input id="adv-major" type="number" value="12" class="short">
+      </div>
+      <div class="adv-form-field">
+        <label class="adv-form-label">HP</label>
+        <input id="adv-maxhp" type="number" value="4" min="1" max="30" class="short">
+      </div>
+      <div class="adv-form-field">
+        <label class="adv-form-label">Stress</label>
+        <input id="adv-maxstress" type="number" value="2" min="0" max="20" class="short">
+      </div>
+    </div>
+    <div class="adv-form-row">
+      <div class="adv-form-field">
+        <label class="adv-form-label">Atk Bonus</label>
+        <input id="adv-atkbonus" type="number" value="0" class="short">
+      </div>
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Attack Name</label>
+        <input id="adv-atkname" type="text" placeholder="Claws" class="wide">
+      </div>
+      <div class="adv-form-field">
+        <label class="adv-form-label">Range</label>
+        <select id="adv-atkrange" class="short">
+          <option>Melee</option>
+          <option>Close</option>
+          <option>Far</option>
+          <option>Very Close</option>
+        </select>
+      </div>
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Damage</label>
+        <input id="adv-atkdmg" type="text" placeholder="1d8+3 phy" class="wide">
+      </div>
+    </div>
+    <div class="adv-form-row">
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Experience</label>
+        <input id="adv-exp" type="text" placeholder="Ambusher +3, Keen Senses +2" class="wide">
+      </div>
+    </div>
+    <label class="adv-form-label" style="margin-bottom:4px;display:block;">Features</label>
+    <div id="adv-features-list"></div>
+    <button type="button" class="adv-add-feat-btn" id="adv-add-feat">+ Add Feature</button>
+    <div class="adv-form-row" style="align-items:center;gap:10px;margin-top:2px;">
       <div class="adv-form-field">
         <label class="adv-form-label">Quantity</label>
         <input id="adv-qty" type="number" value="1" min="1" max="10" class="short">
@@ -594,6 +678,7 @@ layout: null
       document.getElementById("adv-form").classList.toggle("open");
     };
     document.getElementById("create-adv-btn").onclick = createAdversary;
+    document.getElementById("adv-add-feat").onclick   = () => addAdvFeatureRow("", "Passive", "");
 
     // ── Sheet drawer ──────────────────────────────────────────────────────
     document.getElementById("drawer-close").onclick    = closeDrawer;
@@ -848,26 +933,48 @@ layout: null
     adversaries.forEach(adv => {
       const card = document.createElement("div");
       card.className = "adversary-card";
-      const traits = adv.traits || {};
-      const traitKeys   = ["agility","strength","finesse","instinct","presence","knowledge"];
-      const traitLabels = ["Agi","Str","Fin","Ins","Pre","Kno"];
+      const difficulty = adv.difficulty ?? adv.evasion ?? 12;
+      const atkParts = [
+        adv.atkBonus !== undefined ? `Atk ${adv.atkBonus >= 0 ? "+" : ""}${adv.atkBonus}` : null,
+        adv.attackName  || null,
+        adv.attackRange || null,
+        adv.attackDamage || null
+      ].filter(Boolean);
+
+      const featuresHtml = (adv.features || []).length
+        ? `<details class="adv-features">
+            <summary>Features (${adv.features.length})</summary>
+            ${adv.features.map(f =>
+              `<div class="adv-feature-item"><b>${escHtml(f.name)}${f.type ? ` — ${f.type}` : ""}:</b> ${escHtml(f.desc || "")}</div>`
+            ).join("")}
+          </details>` : "";
 
       card.innerHTML = `
         <div class="adversary-name-row">
-          <div class="adversary-name">${adv.name}</div>
+          <div class="adversary-name">${escHtml(adv.name)}</div>
           <button class="delete-btn" style="font-size:11px;padding:3px 8px;">× Del</button>
         </div>
-        <div class="adv-trait-grid">${traitKeys.map((k, i) =>
-          `<div class="adv-trait-cell">
-            <div class="trait-label">${traitLabels[i]}</div>
-            <div class="trait-value" style="font-size:13px;color:#e3a0a0;">${traits[k] ?? "0"}</div>
-          </div>`).join("")}
+        ${adv.tier || adv.role ? `<div class="adv-subtitle">Tier ${adv.tier || "?"} ${escHtml(adv.role || "")}</div>` : ""}
+        ${adv.description ? `<div class="adv-description">${escHtml(adv.description)}</div>` : ""}
+        <div class="adv-stat-grid">
+          <div class="adv-stat-cell"><div class="adv-stat-label">DC</div><div class="adv-stat-val">${difficulty}</div></div>
+          <div class="adv-stat-cell"><div class="adv-stat-label">Minor</div><div class="adv-stat-val">${adv.thresholdMinor ?? "—"}</div></div>
+          <div class="adv-stat-cell"><div class="adv-stat-label">Major</div><div class="adv-stat-val">${adv.thresholdMajor ?? "—"}</div></div>
+          <div class="adv-stat-cell"><div class="adv-stat-label">HP</div><div class="adv-stat-val">${adv.maxHp}</div></div>
+          <div class="adv-stat-cell"><div class="adv-stat-label">Stress</div><div class="adv-stat-val">${adv.maxStress ?? "—"}</div></div>
         </div>
-        <div class="adv-stats-line">Evasion: <span>${adv.evasion ?? 10}</span> &nbsp;|&nbsp; Prof: <span>${adv.proficiency ?? 1}</span></div>
-        <div class="resource-row">
+        ${atkParts.length ? `<div class="adv-attack-line">${escHtml(atkParts.join(" | "))}</div>` : ""}
+        ${adv.experience ? `<div class="adv-stats-line"><span>Exp:</span> ${escHtml(adv.experience)}</div>` : ""}
+        <div class="resource-row" style="margin-top:6px;">
           <div class="resource-label" style="color:#c98a8a;">HP</div>
-          <div class="pips" id="adv-pips-${adv.id}"></div>
+          <div class="pips" id="adv-hp-${adv.id}"></div>
         </div>
+        ${(adv.maxStress ?? 0) > 0 ? `<div class="resource-row">
+          <div class="resource-label" style="color:#c98a4a;">Stress</div>
+          <div class="pips" id="adv-stress-${adv.id}"></div>
+        </div>` : ""}
+        ${adv.motives ? `<div class="adv-stats-line" style="margin-top:4px;"><span>Motives:</span> ${escHtml(adv.motives)}</div>` : ""}
+        ${featuresHtml}
         <div class="adversary-actions">
           <button class="add-map-btn">Add to Map Again</button>
         </div>`;
@@ -879,24 +986,25 @@ layout: null
       card.querySelector(".add-map-btn").onclick = () => addToMap(adv);
 
       grid.appendChild(card);
-      buildAdvPips(adv);
+      buildAdvPips(adv, "hp",     adv.maxHp,         adv.currentHp     ?? adv.maxHp, "hp-adv");
+      buildAdvPips(adv, "stress", adv.maxStress ?? 0, adv.currentStress ?? 0,          "stress-adv");
     });
   }
 
-  function buildAdvPips(adv) {
-    const container = document.getElementById(`adv-pips-${adv.id}`);
-    if (!container) return;
+  function buildAdvPips(adv, key, max, current, colorClass) {
+    const id = key === "hp" ? `adv-hp-${adv.id}` : `adv-stress-${adv.id}`;
+    const container = document.getElementById(id);
+    if (!container || max <= 0) return;
     container.innerHTML = "";
-    const maxHp = adv.maxHp || 4;
-    const curHp = adv.currentHp ?? maxHp;
-    for (let i = 0; i < maxHp; i++) {
+    const stateKey = key === "hp" ? "currentHp" : "currentStress";
+    for (let i = 0; i < max; i++) {
       const pip = document.createElement("div");
-      pip.className = "pip hp-adv" + (i < curHp ? " filled" : "");
+      pip.className = "pip " + colorClass + (i < current ? " filled" : "");
       pip.onclick = async () => {
-        const newVal = adv.currentHp === i + 1 ? i : i + 1;
-        adv.currentHp = newVal;
-        buildAdvPips(adv);
-        const updated = adversaries.map(a => a.id === adv.id ? { ...a, currentHp: newVal } : a);
+        const newVal = adv[stateKey] === i + 1 ? i : i + 1;
+        adv[stateKey] = newVal;
+        buildAdvPips(adv, key, max, newVal, colorClass);
+        const updated = adversaries.map(a => a.id === adv.id ? { ...a, [stateKey]: newVal } : a);
         adversaries = updated;
         try { await updateDoc(advRef, { items: updated }); } catch {}
       };
@@ -907,43 +1015,83 @@ layout: null
   async function createAdversary() {
     const name = document.getElementById("adv-name").value.trim();
     if (!name) { document.getElementById("adv-name").focus(); return; }
-    const maxHp     = parseInt(document.getElementById("adv-maxhp").value)   || 4;
-    const evasion   = parseInt(document.getElementById("adv-evasion").value) || 10;
-    const prof      = parseInt(document.getElementById("adv-prof").value)    || 1;
-    const qty       = Math.max(1, Math.min(10, parseInt(document.getElementById("adv-qty").value) || 1));
-    const traits = {
-      agility:   document.getElementById("adv-agi").value.trim() || "0",
-      strength:  document.getElementById("adv-str").value.trim() || "0",
-      finesse:   document.getElementById("adv-fin").value.trim() || "0",
-      instinct:  document.getElementById("adv-ins").value.trim() || "0",
-      presence:  document.getElementById("adv-pre").value.trim() || "0",
-      knowledge: document.getElementById("adv-kno").value.trim() || "0",
-    };
+
+    const tier        = parseInt(document.getElementById("adv-tier").value)       || 1;
+    const role        = document.getElementById("adv-role").value.trim();
+    const description = document.getElementById("adv-desc").value.trim();
+    const motives     = document.getElementById("adv-motives").value.trim();
+    const difficulty  = parseInt(document.getElementById("adv-difficulty").value) || 12;
+    const thresholdMinor = parseInt(document.getElementById("adv-minor").value)   || 6;
+    const thresholdMajor = parseInt(document.getElementById("adv-major").value)   || 12;
+    const maxHp       = parseInt(document.getElementById("adv-maxhp").value)      || 4;
+    const maxStress   = parseInt(document.getElementById("adv-maxstress").value)  || 0;
+    const atkBonus    = parseInt(document.getElementById("adv-atkbonus").value)   || 0;
+    const attackName  = document.getElementById("adv-atkname").value.trim();
+    const attackRange = document.getElementById("adv-atkrange").value;
+    const attackDamage = document.getElementById("adv-atkdmg").value.trim();
+    const experience  = document.getElementById("adv-exp").value.trim();
+    const features    = Array.from(document.querySelectorAll("#adv-features-list .adv-feat-row")).map(row => ({
+      name: row.querySelector(".adv-feat-name").value.trim(),
+      type: row.querySelector(".adv-feat-type").value,
+      desc: row.querySelector(".adv-feat-desc").value.trim()
+    })).filter(f => f.name);
+
+    const qty = Math.max(1, Math.min(10, parseInt(document.getElementById("adv-qty").value) || 1));
 
     const newEntries = [];
     for (let i = 0; i < qty; i++) {
       newEntries.push({
         id: "adv-" + Date.now() + "-" + i,
         name: qty > 1 ? `${name} ${i + 1}` : name,
-        maxHp, currentHp: maxHp, evasion, proficiency: prof, traits
+        tier, role, description, motives,
+        difficulty, thresholdMinor, thresholdMajor,
+        maxHp, currentHp: maxHp,
+        maxStress, currentStress: 0,
+        atkBonus, attackName, attackRange, attackDamage,
+        experience, features
       });
     }
 
     adversaries = [...adversaries, ...newEntries];
     try { await updateDoc(advRef, { items: adversaries }); } catch {}
 
-    // Place each on the map automatically
     for (let i = 0; i < newEntries.length; i++) {
       await addToMap(newEntries[i], i);
     }
 
-    document.getElementById("adv-name").value = "";
-    document.getElementById("adv-qty").value = "1";
-    ["adv-agi","adv-str","adv-fin","adv-ins","adv-pre","adv-kno"].forEach(id => {
-      document.getElementById(id).value = "0";
+    // Reset form
+    ["adv-name","adv-role","adv-desc","adv-motives","adv-atkname","adv-atkdmg","adv-exp"].forEach(id => {
+      document.getElementById(id).value = "";
     });
-    document.getElementById("adv-maxhp").value = "4";
+    document.getElementById("adv-tier").value       = "1";
+    document.getElementById("adv-difficulty").value = "12";
+    document.getElementById("adv-minor").value      = "6";
+    document.getElementById("adv-major").value      = "12";
+    document.getElementById("adv-maxhp").value      = "4";
+    document.getElementById("adv-maxstress").value  = "2";
+    document.getElementById("adv-atkbonus").value   = "0";
+    document.getElementById("adv-atkrange").value   = "Melee";
+    document.getElementById("adv-qty").value        = "1";
+    document.getElementById("adv-features-list").innerHTML = "";
     document.getElementById("adv-form").classList.remove("open");
+  }
+
+  function addAdvFeatureRow(name, type, desc) {
+    const list = document.getElementById("adv-features-list");
+    const row  = document.createElement("div");
+    row.className = "adv-feat-row";
+    row.innerHTML = `
+      <input class="adv-feat-name" type="text" placeholder="Feature name" value="${escHtml(name)}">
+      <select class="adv-feat-type">
+        <option${type==="Passive"?" selected":""}>Passive</option>
+        <option${type==="Action"?" selected":""}>Action</option>
+        <option${type==="Reaction"?" selected":""}>Reaction</option>
+        <option${type==="Countermeasure"?" selected":""}>Countermeasure</option>
+      </select>
+      <input class="adv-feat-desc" type="text" placeholder="Description" value="${escHtml(desc)}">
+      <button class="delete-btn" style="padding:4px 8px;font-size:11px;flex-shrink:0;">×</button>`;
+    row.querySelector(".delete-btn").onclick = () => row.remove();
+    list.appendChild(row);
   }
 
   async function addToMap(adv, index = 0) {
