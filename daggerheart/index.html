@@ -6,7 +6,7 @@ layout: null
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daggerheart — Home</title>
+<title>GM Tools — Daggerheart</title>
 <style>
   body {
     margin: 0;
@@ -35,6 +35,37 @@ layout: null
   .nav-card:hover { border-color: #c9a8ff; box-shadow: 0 0 24px rgba(170,120,255,0.4); }
   .nav-card-icon { font-size: 26px; margin-bottom: 6px; }
   .nav-card-label { font-size: 15px; font-weight: bold; color: #c9a8ff; }
+
+  /* Roster */
+  .roster-list { display: flex; flex-direction: column; gap: 8px; }
+  .roster-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #1a1428; border: 2px solid #3a2a5c; border-radius: 12px;
+    padding: 10px 14px; color: #e8e2f5;
+  }
+  .roster-row-info { flex: 1; }
+  .roster-row-name { font-size: 15px; }
+  .roster-row-class { font-size: 12px; color: #9b8bbf; }
+  .remove-btn {
+    background: transparent; color: #963e3e; border: 1px solid #963e3e;
+    border-radius: 6px; padding: 3px 8px; font-size: 12px; cursor: pointer;
+    flex-shrink: 0; margin-left: 10px;
+  }
+  .remove-btn:hover { background: #963e3e; color: #fff; }
+  .add-player-form {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+  }
+  .add-player-form input {
+    flex: 1; min-width: 120px; padding: 8px 12px; border-radius: 8px;
+    border: 2px solid #5b3e96; background: #1a1428; color: #e8e2f5;
+    font-size: 13px; outline: none;
+  }
+  .add-player-form input:focus { border-color: #c9a8ff; }
+  .add-player-form button {
+    background: linear-gradient(135deg, #5b3e96, #8a5fc9); color: white;
+    border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px;
+  }
+
   .player-list { display: flex; flex-direction: column; gap: 10px; }
   .player-row {
     display: flex; align-items: center; justify-content: space-between;
@@ -87,11 +118,11 @@ layout: null
 </div>
 
 <div class="home">
-  <h1>Daggerheart</h1>
-  <div class="subtitle">Tostadinator's Party</div>
+  <h1>GM Tools</h1>
+  <div class="subtitle">Session control for the GM</div>
   <div class="sync-status" id="sync-status">Connecting...</div>
 
-  <div class="section-title">Group Tools</div>
+  <div class="section-title">Pages</div>
   <div class="nav-grid">
     <a href="./sheet/" class="nav-card">
       <div class="nav-card-icon">📜</div>
@@ -101,6 +132,14 @@ layout: null
       <div class="nav-card-icon">🗺️</div>
       <div class="nav-card-label">Battle Map</div>
     </a>
+  </div>
+
+  <div class="section-title">Player Roster</div>
+  <div class="roster-list" id="roster-list"></div>
+  <div class="add-player-form">
+    <input id="new-player-name" type="text" placeholder="Player name" autocomplete="off">
+    <input id="new-player-class" type="text" placeholder="Class (optional)" autocomplete="off">
+    <button id="add-player-btn">+ Add Player</button>
   </div>
 
   <div class="section-title">Spotlight — Whose Turn?</div>
@@ -149,7 +188,7 @@ layout: null
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyArnMD-8q0InlTrHxRmvvKE5fx9dAn4PPQ",
@@ -160,59 +199,122 @@ layout: null
     appId: "1:880963026113:web:84697ee6ee18a2950fe840"
   };
 
-  const PLAYERS = [
+  const DEFAULT_ROSTER = [
     { docId: "tostadinator", name: "Tostadinator", className: "Sorcerer (Primal)" },
-    { docId: "lola",         name: "Lola",         className: "—" },
-    { docId: "maya",         name: "Maya",         className: "—" },
-    { docId: "drew",         name: "Drew",         className: "—" },
-    { docId: "oli",          name: "Oli",          className: "—" },
-    { docId: "cal",          name: "Cal",          className: "—" },
-    { docId: "caleb",        name: "Caleb",        className: "—" },
-    { docId: "paul",         name: "Paul",         className: "—" },
+    { docId: "lola",         name: "Lola",         className: "" },
+    { docId: "maya",         name: "Maya",         className: "" },
+    { docId: "drew",         name: "Drew",         className: "" },
+    { docId: "oli",          name: "Oli",          className: "" },
+    { docId: "cal",          name: "Cal",          className: "" },
+    { docId: "caleb",        name: "Caleb",        className: "" },
+    { docId: "paul",         name: "Paul",         className: "" },
   ];
 
-  let db, spotlightRef, started = false;
+  let db, spotlightRef, rosterRef, players = [], started = false;
 
   window.initApp = async function() {
     if (started) return; started = true;
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     spotlightRef = doc(db, "party", "spotlight");
+    rosterRef    = doc(db, "party", "roster");
     const statusEl = document.getElementById("sync-status");
-    const listEl = document.getElementById("player-list");
 
-    function renderList(activeId) {
-      listEl.innerHTML = "";
-      PLAYERS.forEach(p => {
-        const row = document.createElement("div");
-        row.className = "player-row" + (p.docId === activeId ? " spotlight" : "");
-        row.innerHTML = `
-          <div>
-            <div class="player-row-name">${p.name}</div>
-            <div class="player-row-class">${p.className}</div>
-          </div>
-          <button class="spotlight-btn ${p.docId === activeId ? "active" : ""}">
-            ${p.docId === activeId ? "In Spotlight" : "Give Spotlight"}
-          </button>`;
-        row.querySelector("button").onclick = async () => {
-          try { await setDoc(spotlightRef, { activeId: p.docId }); }
-          catch { statusEl.textContent = "Sync failed"; statusEl.classList.add("error"); }
-        };
-        listEl.appendChild(row);
-      });
+    // ── Roster ──────────────────────────────────────────────────────
+    const rosterSnap = await getDoc(rosterRef).catch(() => null);
+    if (!rosterSnap || !rosterSnap.exists()) {
+      await setDoc(rosterRef, { players: DEFAULT_ROSTER }).catch(() => {});
+      players = [...DEFAULT_ROSTER];
+    } else {
+      players = rosterSnap.data().players || [];
     }
+    renderRoster();
+    renderSpotlight(null);
+
+    onSnapshot(rosterRef, (d) => {
+      if (d.exists()) { players = d.data().players || []; renderRoster(); }
+    });
+
+    // ── Spotlight ────────────────────────────────────────────────────
+    const spotSnap = await getDoc(spotlightRef).catch(() => null);
+    if (!spotSnap || !spotSnap.exists()) {
+      await setDoc(spotlightRef, { activeId: null }).catch(() => {});
+    }
+    const initActive = spotSnap && spotSnap.exists() ? spotSnap.data().activeId : null;
+    renderSpotlight(initActive);
 
     try {
-      const snap = await getDoc(spotlightRef);
-      if (!snap.exists()) await setDoc(spotlightRef, { activeId: null });
-      renderList(snap.exists() ? snap.data().activeId : null);
       statusEl.textContent = "Synced ✓";
-      onSnapshot(spotlightRef, (d) => renderList(d.exists() ? d.data().activeId : null));
+      onSnapshot(spotlightRef, (d) => renderSpotlight(d.exists() ? d.data().activeId : null));
     } catch(e) {
       statusEl.textContent = e.message || "Offline — check connection";
       statusEl.classList.add("error");
     }
+
+    // ── Add player ───────────────────────────────────────────────────
+    document.getElementById("add-player-btn").onclick = async () => {
+      const nameInput  = document.getElementById("new-player-name");
+      const classInput = document.getElementById("new-player-class");
+      const name = nameInput.value.trim();
+      if (!name) { nameInput.focus(); return; }
+      const docId = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+      if (players.some(p => p.docId === docId)) {
+        nameInput.value = "";
+        nameInput.placeholder = "Name already exists";
+        setTimeout(() => { nameInput.placeholder = "Player name"; }, 2000);
+        return;
+      }
+      const newPlayer = { docId, name, className: classInput.value.trim() };
+      players = [...players, newPlayer];
+      nameInput.value = ""; classInput.value = "";
+      try { await updateDoc(rosterRef, { players }); } catch {}
+    };
+
+    document.getElementById("new-player-name").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("add-player-btn").click();
+    });
   };
+
+  function renderRoster() {
+    const listEl = document.getElementById("roster-list");
+    listEl.innerHTML = "";
+    players.forEach(p => {
+      const row = document.createElement("div");
+      row.className = "roster-row";
+      row.innerHTML = `
+        <div class="roster-row-info">
+          <div class="roster-row-name">${p.name}</div>
+          ${p.className ? `<div class="roster-row-class">${p.className}</div>` : ""}
+        </div>
+        <button class="remove-btn" data-id="${p.docId}">× Remove</button>`;
+      row.querySelector(".remove-btn").onclick = async () => {
+        players = players.filter(x => x.docId !== p.docId);
+        try { await updateDoc(rosterRef, { players }); } catch {}
+      };
+      listEl.appendChild(row);
+    });
+  }
+
+  function renderSpotlight(activeId) {
+    const listEl = document.getElementById("player-list");
+    listEl.innerHTML = "";
+    players.forEach(p => {
+      const row = document.createElement("div");
+      row.className = "player-row" + (p.docId === activeId ? " spotlight" : "");
+      row.innerHTML = `
+        <div>
+          <div class="player-row-name">${p.name}</div>
+          ${p.className ? `<div class="player-row-class">${p.className}</div>` : ""}
+        </div>
+        <button class="spotlight-btn ${p.docId === activeId ? "active" : ""}">
+          ${p.docId === activeId ? "In Spotlight" : "Give Spotlight"}
+        </button>`;
+      row.querySelector("button").onclick = async () => {
+        try { await setDoc(spotlightRef, { activeId: p.docId }); } catch {}
+      };
+      listEl.appendChild(row);
+    });
+  }
 
   if (!document.getElementById("auth-gate")) window.initApp();
 </script>

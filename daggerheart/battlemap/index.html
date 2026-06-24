@@ -24,12 +24,8 @@ layout: null
 
   /* ── Controls ─────────────────────────────────────────────────────── */
   .controls {
-    max-width: 900px; margin: 0 auto 12px; display: flex; gap: 8px;
+    max-width: 1400px; margin: 0 auto 12px; display: flex; gap: 8px;
     flex-wrap: wrap; justify-content: center;
-  }
-  .controls input[type="text"] {
-    flex: 1; min-width: 200px; padding: 8px; border-radius: 8px;
-    border: 2px solid #5b3e96; background: #1a1428; color: #e8e2f5;
   }
   .controls button {
     background: linear-gradient(135deg, #5b3e96, #8a5fc9); color: white;
@@ -39,7 +35,7 @@ layout: null
 
   /* ── Map ──────────────────────────────────────────────────────────── */
   .map-wrap {
-    max-width: 900px; margin: 0 auto;
+    max-width: 1400px; margin: 0 auto;
     position: relative; border: 2px solid #5b3e96; border-radius: 12px; overflow: hidden;
     background: #14102080;
     background-image:
@@ -51,22 +47,22 @@ layout: null
   .map-bg { width: 100%; display: block; pointer-events: none; }
   .map-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
   .token {
-    position: absolute; width: 48px; height: 48px; border-radius: 50%;
-    border: 3px solid #c9a8ff; background: #3a2a5c;
+    position: absolute; width: 32px; height: 32px; border-radius: 50%;
+    border: 2px solid #c9a8ff; background: #3a2a5c;
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: bold; color: #fff;
-    cursor: grab; box-shadow: 0 0 10px rgba(170,120,255,0.5);
+    font-size: 9px; font-weight: bold; color: #fff;
+    cursor: grab; box-shadow: 0 0 8px rgba(170,120,255,0.5);
     user-select: none; touch-action: none;
   }
   .token.enemy { border-color: #e3a0a0; background: #5c2a2a; box-shadow: 0 0 10px rgba(220,80,80,0.4); }
   .token.player-token:hover { box-shadow: 0 0 20px rgba(170,120,255,0.95); transform: scale(1.1); transition: all 0.1s; }
   .token:active { cursor: grabbing; }
   .token-label {
-    position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
-    font-size: 10px; white-space: nowrap; color: #c9a8ff;
+    position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; white-space: nowrap; color: #c9a8ff;
   }
   .token.enemy .token-label { color: #e3a0a0; }
-  .legend { max-width: 900px; margin: 10px auto; font-size: 12px; color: #9b8bbf; text-align: center; }
+  .legend { max-width: 1400px; margin: 10px auto; font-size: 12px; color: #9b8bbf; text-align: center; }
 
   /* ── Party strip ──────────────────────────────────────────────────── */
   #party-strip {
@@ -167,13 +163,6 @@ layout: null
   .pip.filled { background: #c9a8ff; box-shadow: 0 0 8px #c9a8ff; }
   .feature { background: #241a3a; border-radius: 8px; padding: 8px; margin-bottom: 6px; font-size: 12px; line-height: 1.4; }
   .feature b { color: #c9a8ff; }
-  .roll-btn {
-    width: 100%; background: linear-gradient(135deg, #5b3e96, #8a5fc9);
-    color: white; border: none; border-radius: 10px; padding: 12px;
-    font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 4px;
-  }
-  .roll-btn:active { transform: scale(0.98); }
-  .roll-result { text-align: center; margin-top: 8px; font-size: 13px; min-height: 20px; }
   .badge { display: inline-block; background: #3a2a5c; color: #c9a8ff; border-radius: 6px; padding: 2px 8px; font-size: 11px; margin-right: 4px; }
 
   /* ── Auth gate ────────────────────────────────────────────────────── */
@@ -217,8 +206,6 @@ layout: null
 <div class="sync-status" id="sync-status">Connecting...</div>
 
 <div class="controls">
-  <input type="text" id="bg-url" placeholder="Map image URL" value="https://i.redd.it/g39kbyrmglpc1.jpeg">
-  <button id="set-bg-btn">Set Background</button>
   <button id="load-party-btn">⚔️ Load Party</button>
   <button id="add-token-btn">+ Player</button>
   <button id="add-enemy-btn">+ Enemy</button>
@@ -288,11 +275,6 @@ layout: null
     <div id="drawer-domains-list"></div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Duality Dice</div>
-    <button class="roll-btn" id="drawer-roll-btn">Roll Hope & Fear (2d12)</button>
-    <div class="roll-result" id="drawer-roll-result"></div>
-  </div>
 </div>
 <div id="drawer-overlay"></div>
 
@@ -491,8 +473,8 @@ layout: null
       const { id, offsetX, offsetY, rect } = dragging;
       let x = clientX - rect.left - offsetX;
       let y = clientY - rect.top - offsetY;
-      x = Math.max(0, Math.min(rect.width  - 48, x));
-      y = Math.max(0, Math.min(rect.height - 48, y));
+      x = Math.max(0, Math.min(rect.width  - 32, x));
+      y = Math.max(0, Math.min(rect.height - 32, y));
       if (!mapState.tokens[id]) return;
       mapState.tokens[id].x = x;
       mapState.tokens[id].y = y;
@@ -514,11 +496,6 @@ layout: null
   }
 
   function bindMapControls() {
-    document.getElementById("set-bg-btn").onclick = async () => {
-      const url = document.getElementById("bg-url").value.trim();
-      mapState.bgUrl = url; renderBg();
-      try { await updateDoc(mapRef, { bgUrl: url }); } catch {}
-    };
     document.getElementById("load-party-btn").onclick = loadParty;
     document.getElementById("add-token-btn").onclick  = () => addToken("player");
     document.getElementById("add-enemy-btn").onclick  = () => addToken("enemy");
@@ -634,7 +611,6 @@ layout: null
   function bindDrawerUI() {
     document.getElementById("drawer-close").onclick   = closeSheet;
     document.getElementById("drawer-overlay").onclick = closeSheet;
-    document.getElementById("drawer-roll-btn").onclick = rollDice;
   }
 
   function openSheet(docId) {
@@ -674,7 +650,6 @@ layout: null
       ? char.domains.map(d => `<span class="badge">${d}</span>`).join("") +
         `<div class="feature" style="margin-top:6px;"><i>Domain cards pending.</i></div>`
       : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No domains listed yet.</div>`;
-    document.getElementById("drawer-roll-result").textContent = "";
   }
 
   function buildDrawerPicker(currentDocId) {
@@ -748,17 +723,6 @@ layout: null
       statusEl.textContent = e.message || "Sync failed";
       statusEl.classList.add("error");
     }
-  }
-
-  function rollDice() {
-    const hope = Math.floor(Math.random() * 12) + 1;
-    const fear = Math.floor(Math.random() * 12) + 1;
-    let outcome;
-    if (hope === fear)    outcome = "💥 Critical! Both dice match.";
-    else if (hope > fear) outcome = "✨ Hope rises — you gain a Hope token.";
-    else                  outcome = "🌑 Fear rises — the GM gains a Fear token.";
-    document.getElementById("drawer-roll-result").innerHTML =
-      `Hope: <b>${hope}</b> &nbsp; Fear: <b>${fear}</b><br>${outcome}`;
   }
 
   if (!document.getElementById("auth-gate")) window.initApp();

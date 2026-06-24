@@ -62,13 +62,6 @@ layout: null
   .pip.filled { background: #c9a8ff; box-shadow: 0 0 8px #c9a8ff; }
   .feature { background: #241a3a; border-radius: 10px; padding: 10px; margin-bottom: 8px; font-size: 13px; line-height: 1.4; }
   .feature b { color: #c9a8ff; }
-  .roll-btn {
-    width: 100%; background: linear-gradient(135deg, #5b3e96, #8a5fc9);
-    color: white; border: none; border-radius: 10px; padding: 14px;
-    font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 6px;
-  }
-  .roll-btn:active { transform: scale(0.98); }
-  .roll-result { text-align: center; margin-top: 10px; font-size: 14px; min-height: 20px; }
   .badge { display: inline-block; background: #3a2a5c; color: #c9a8ff; border-radius: 6px; padding: 2px 8px; font-size: 11px; margin-right: 4px; }
 
   /* Password gate */
@@ -152,11 +145,6 @@ layout: null
       <div id="domains-list"></div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Duality Dice Roller</div>
-      <button class="roll-btn" id="roll-btn">Roll Hope & Fear (2d12)</button>
-      <div class="roll-result" id="roll-result"></div>
-    </div>
   </div>
 </div>
 
@@ -261,8 +249,6 @@ layout: null
 
     buildPicker();
     await selectCharacter(CHARACTERS[0]);
-
-    document.getElementById("roll-btn").addEventListener("click", rollDice);
   };
 
   function buildPicker() {
@@ -374,17 +360,6 @@ layout: null
       statusEl.textContent = "Sync failed — check connection";
       statusEl.classList.add("error");
     }
-  }
-
-  function rollDice() {
-    const hope = Math.floor(Math.random() * 12) + 1;
-    const fear = Math.floor(Math.random() * 12) + 1;
-    let outcome;
-    if (hope === fear)      outcome = "💥 Critical! Both dice match.";
-    else if (hope > fear)   outcome = "✨ Hope rises — you gain a Hope token.";
-    else                    outcome = "🌑 Fear rises — the GM gains a Fear token.";
-    document.getElementById("roll-result").innerHTML =
-      `Hope: <b>${hope}</b> &nbsp; Fear: <b>${fear}</b><br>${outcome}`;
   }
 
   if (!document.getElementById("auth-gate")) window.initApp();
