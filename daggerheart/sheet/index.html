@@ -201,46 +201,28 @@ layout: null
     appId: "1:880963026113:web:84697ee6ee18a2950fe840"
   };
 
-  // ── Add new characters here when players join ────────────────────────────────
+  // Stub list — names for the picker; full data is loaded from Firebase
   const CHARACTERS = [
-    {
-      docId: "tostadinator",
-      portrait: "/daggerheart/assets/tostadinator.jpg",
-      name: "Tostadinator",
-      ancestry: "Fungril • Underborne",
-      charClass: "Sorcerer (Primal Origin)",
-      traits: [
-        { name: "Agility",   val: "0"  },
-        { name: "Strength",  val: "-1" },
-        { name: "Finesse",   val: "0"  },
-        { name: "Instinct",  val: "+2" },
-        { name: "Presence",  val: "+1" },
-        { name: "Knowledge", val: "+1" },
-      ],
-      evasion: 10, proficiency: 1,
-      features: [
-        { name: "Fungril Network", desc: "Instinct Roll (12) to communicate telepathically with other Fungril across any distance." },
-        { name: "Death Connection", desc: "Touching a recent corpse, mark a Stress to extract one memory tied to an emotion or sensation." },
-        { name: "Low-Light Living", desc: "Advantage on rolls to hide, investigate, or perceive in low light or heavy shadow." },
-      ],
-      domains: ["Arcana", "Midnight"],
-    },
-    // Stubs — fill in class/traits/features when each player creates their character
-    { docId: "lola",  name: "Lola",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "maya",  name: "Maya",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "drew",  name: "Drew",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "oli",   name: "Oli",   ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "cal",   name: "Cal",   ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "caleb", name: "Caleb", ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "paul",  name: "Paul",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "tostadinator", name: "Tostadinator" },
+    { docId: "lola",         name: "Lola"  },
+    { docId: "maya",         name: "Maya"  },
+    { docId: "drew",         name: "Drew"  },
+    { docId: "oli",          name: "Oli"   },
+    { docId: "cal",          name: "Cal"   },
+    { docId: "caleb",        name: "Caleb" },
+    { docId: "paul",         name: "Paul"  },
   ];
-  // ─────────────────────────────────────────────────────────────────────────────
 
   const MAX_PIPS = 6;
   const DEFAULT_STATE = { hp: 0, stress: 0, hope: 2 };
+  const DEFAULT_CHAR = {
+    hp: 0, stress: 0, hope: 2,
+    name: "", ancestry: "—", charClass: "—", portrait: "",
+    evasion: 10, proficiency: 1, traits: [], features: [], domains: []
+  };
 
   let db, charRef, currentState = { ...DEFAULT_STATE }, unsubscribe = null;
-  let activeChar = CHARACTERS[0], started = false;
+  let activeDocId = CHARACTERS[0].docId, started = false;
 
   window.initApp = async function() {
     if (started) return; started = true;
@@ -248,7 +230,7 @@ layout: null
     db = getFirestore(app);
 
     buildPicker();
-    await selectCharacter(CHARACTERS[0]);
+    await selectCharacter(CHARACTERS[0].docId);
   };
 
   function buildPicker() {
@@ -256,70 +238,45 @@ layout: null
     picker.innerHTML = "";
     CHARACTERS.forEach(c => {
       const btn = document.createElement("button");
-      btn.className = "char-btn" + (c.docId === activeChar.docId ? " active" : "");
+      btn.className = "char-btn" + (c.docId === activeDocId ? " active" : "");
       btn.textContent = c.name;
-      btn.onclick = () => selectCharacter(c);
+      btn.onclick = () => selectCharacter(c.docId);
       picker.appendChild(btn);
     });
   }
 
-  async function selectCharacter(char) {
+  async function selectCharacter(docId) {
     if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-    activeChar = char;
+    activeDocId = docId;
 
-    // Update picker highlight
     document.querySelectorAll(".char-btn").forEach(b => {
-      b.classList.toggle("active", b.textContent === char.name);
+      const stub = CHARACTERS.find(c => c.docId === docId);
+      b.classList.toggle("active", b.textContent === (stub?.name || docId));
     });
 
-    // Render static info
-    document.getElementById("char-name").textContent = char.name;
-    document.getElementById("char-subtitle").textContent = `${char.ancestry} • ${char.charClass}`;
-    const portraitFrame = document.getElementById("char-portrait");
-    const portraitImg   = document.getElementById("char-portrait-img");
-    if (char.portrait) {
-      portraitImg.src = char.portrait;
-      portraitFrame.style.display = "flex";
-    } else {
-      portraitFrame.style.display = "none";
-    }
-
-    const traitsGrid = document.getElementById("traits-grid");
-    traitsGrid.innerHTML = char.traits.map(t =>
-      `<div class="trait"><div class="trait-name">${t.name}</div><div class="trait-val">${t.val}</div></div>`
-    ).join("");
-
-    document.getElementById("stats-line").innerHTML =
-      `Evasion: <span style="color:#c9a8ff;font-weight:bold;">${char.evasion}</span> &nbsp;|&nbsp; Proficiency: <span style="color:#c9a8ff;font-weight:bold;">${char.proficiency}</span>`;
-
-    const featuresList = document.getElementById("features-list");
-    featuresList.innerHTML = char.features.length
-      ? char.features.map(f => `<div class="feature"><b>${f.name}:</b> ${f.desc}</div>`).join("")
-      : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No features listed yet.</div>`;
-
-    const domainsList = document.getElementById("domains-list");
-    domainsList.innerHTML = char.domains.map(d => `<span class="badge">${d}</span>`).join("") +
-      `<div class="feature" style="margin-top:8px;"><i>Domain cards pending.</i></div>`;
-
-    // Load live resources from Firestore
-    charRef = doc(db, "characters", char.docId);
+    charRef = doc(db, "characters", docId);
     const statusEl = document.getElementById("sync-status");
+    statusEl.textContent = "Loading...";
+    statusEl.classList.remove("error");
 
     try {
       const snap = await getDoc(charRef);
+      let data;
       if (!snap.exists()) {
         await setDoc(charRef, DEFAULT_STATE);
-        currentState = { ...DEFAULT_STATE };
+        data = { ...DEFAULT_CHAR, name: CHARACTERS.find(c => c.docId === docId)?.name || docId };
       } else {
-        currentState = { ...DEFAULT_STATE, ...snap.data() };
+        data = { ...DEFAULT_CHAR, ...snap.data() };
       }
+      renderStaticInfo(data);
+      currentState = { hp: data.hp || 0, stress: data.stress || 0, hope: data.hope || 2 };
       renderPips();
       statusEl.textContent = "Synced ✓";
       statusEl.classList.remove("error");
 
       unsubscribe = onSnapshot(charRef, (docSnap) => {
         if (docSnap.exists()) {
-          currentState = { ...DEFAULT_STATE, ...docSnap.data() };
+          currentState = { hp: docSnap.data().hp || 0, stress: docSnap.data().stress || 0, hope: docSnap.data().hope || 2 };
           renderPips();
         }
       });
@@ -328,6 +285,31 @@ layout: null
       statusEl.classList.add("error");
       renderPips();
     }
+  }
+
+  function renderStaticInfo(char) {
+    document.getElementById("char-name").textContent = char.name || char.docId || "—";
+    document.getElementById("char-subtitle").textContent = `${char.ancestry || "—"} • ${char.charClass || "—"}`;
+    const portraitFrame = document.getElementById("char-portrait");
+    const portraitImg   = document.getElementById("char-portrait-img");
+    if (char.portrait) {
+      portraitImg.src = char.portrait;
+      portraitFrame.style.display = "flex";
+    } else {
+      portraitFrame.style.display = "none";
+    }
+    document.getElementById("traits-grid").innerHTML = (char.traits || []).map(t =>
+      `<div class="trait"><div class="trait-name">${t.name}</div><div class="trait-val">${t.val}</div></div>`
+    ).join("");
+    document.getElementById("stats-line").innerHTML =
+      `Evasion: <span style="color:#c9a8ff;font-weight:bold;">${char.evasion ?? 10}</span> &nbsp;|&nbsp; Proficiency: <span style="color:#c9a8ff;font-weight:bold;">${char.proficiency ?? 1}</span>`;
+    document.getElementById("features-list").innerHTML = (char.features || []).length
+      ? char.features.map(f => `<div class="feature"><b>${f.name}:</b> ${f.desc}</div>`).join("")
+      : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No features listed yet.</div>`;
+    document.getElementById("domains-list").innerHTML = (char.domains || []).length
+      ? char.domains.map(d => `<span class="badge">${d}</span>`).join("") +
+        `<div class="feature" style="margin-top:8px;"><i>Domain cards pending.</i></div>`
+      : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No domains listed yet.</div>`;
   }
 
   function renderPips() {

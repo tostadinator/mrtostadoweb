@@ -213,6 +213,60 @@ layout: null
   .feature b { color: #c9a8ff; }
   .badge { display: inline-block; background: #3a2a5c; color: #c9a8ff; border-radius: 6px; padding: 2px 8px; font-size: 11px; margin-right: 4px; }
 
+  /* ── Edit form (in drawer) ─────────────────────────────────────────────── */
+  .drawer-edit-btn {
+    width: 100%; background: transparent; color: #9b8bbf; border: 1.5px solid #3a2a5c;
+    border-radius: 8px; padding: 9px; font-size: 13px; cursor: pointer; margin-top: 14px;
+  }
+  .drawer-edit-btn:hover { border-color: #c9a8ff; color: #c9a8ff; }
+  .edit-save-btn {
+    flex: 1; background: linear-gradient(135deg, #5b3e96, #8a5fc9); color: white;
+    border: none; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: bold; cursor: pointer;
+  }
+  .edit-cancel-btn {
+    background: transparent; color: #9b8bbf; border: 1.5px solid #3a2a5c;
+    border-radius: 8px; padding: 10px 14px; font-size: 13px; cursor: pointer;
+  }
+  .edit-cancel-btn:hover { border-color: #c9a8ff; color: #c9a8ff; }
+  .edit-feature-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .edit-feature-row input {
+    padding: 6px 8px; border-radius: 6px; border: 1.5px solid #3a2a5c;
+    background: #0a0712; color: #e8e2f5; font-size: 12px; outline: none;
+  }
+  .edit-feature-row input:focus { border-color: #c9a8ff; }
+  .edit-feat-name { width: 35%; flex-shrink: 0; }
+  .edit-feat-desc { flex: 1; }
+  .edit-add-btn {
+    width: 100%; background: transparent; color: #9b8bbf;
+    border: 1.5px dashed #3a2a5c; border-radius: 8px; padding: 7px 12px; font-size: 12px; cursor: pointer; margin-bottom: 10px;
+  }
+  .edit-add-btn:hover { border-color: #c9a8ff; color: #c9a8ff; }
+  #drawer-edit-form { display: none; }
+  #sheet-drawer.editing #drawer-char-name,
+  #sheet-drawer.editing #drawer-char-subtitle,
+  #sheet-drawer.editing #drawer-portrait,
+  #sheet-drawer.editing .drawer-section,
+  #sheet-drawer.editing .drawer-edit-btn { display: none; }
+  #sheet-drawer.editing #drawer-edit-form { display: block; }
+  #drawer-edit-form label {
+    display: block; font-size: 10px; color: #9b8bbf;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;
+  }
+  #drawer-edit-form input {
+    padding: 7px 10px; border-radius: 7px; border: 1.5px solid #3a2a5c;
+    background: #0a0712; color: #e8e2f5; font-size: 13px; outline: none;
+    width: 100%; box-sizing: border-box;
+  }
+  #drawer-edit-form input:focus { border-color: #c9a8ff; }
+  #drawer-edit-form input.short { width: 56px; }
+  #drawer-edit-form .edit-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-end; flex-wrap: wrap; }
+  #drawer-edit-form .edit-field { display: flex; flex-direction: column; flex: 1; }
+  #drawer-edit-form .edit-field.no-grow { flex: 0; }
+  #drawer-portrait-preview {
+    max-width: 80px; border-radius: 6px; margin-top: 4px;
+    border: 1px solid #5b3e96; display: none;
+  }
+
   /* ── Auth gate ────────────────────────────────────────────────────────── */
   #auth-gate {
     position: fixed; inset: 0; z-index: 9999;
@@ -325,6 +379,41 @@ layout: null
     <div class="drawer-section-title">Domains</div>
     <div id="drawer-domains"></div>
   </div>
+  <button class="drawer-edit-btn" id="drawer-edit-btn">✏ Edit Character</button>
+  <div id="drawer-edit-form">
+    <div class="edit-row">
+      <div class="edit-field">
+        <label>Portrait path or URL</label>
+        <input id="edit-portrait" type="text" placeholder="/daggerheart/portraits/name.jpg">
+        <img id="drawer-portrait-preview" src="" alt="">
+      </div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field"><label>Name</label><input id="edit-name" type="text"></div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field"><label>Ancestry</label><input id="edit-ancestry" type="text"></div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field"><label>Class</label><input id="edit-class" type="text"></div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field no-grow"><label>Evasion</label><input id="edit-evasion" type="number" class="short"></div>
+      <div class="edit-field no-grow"><label>Prof.</label><input id="edit-prof" type="number" class="short"></div>
+    </div>
+    <label>Traits</label>
+    <div class="adv-trait-inputs" id="edit-traits" style="margin-bottom:10px;"></div>
+    <label>Features</label>
+    <div id="edit-features-list"></div>
+    <button class="edit-add-btn" id="edit-add-feature">+ Add Feature</button>
+    <div class="edit-row">
+      <div class="edit-field"><label>Domains (comma-separated)</label><input id="edit-domains" type="text" placeholder="Arcana, Midnight"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="edit-save-btn" id="edit-save-btn">Save Changes</button>
+      <button class="edit-cancel-btn" id="edit-cancel-btn">Cancel</button>
+    </div>
+  </div>
 </div>
 <div id="drawer-overlay"></div>
 
@@ -372,7 +461,7 @@ layout: null
     appId: "1:880963026113:web:84697ee6ee18a2950fe840"
   };
 
-  const CHARACTERS = [
+  const SEED_CHARACTERS = [
     {
       docId: "tostadinator",
       portrait: "/daggerheart/assets/tostadinator.jpg",
@@ -416,7 +505,11 @@ layout: null
   ];
 
   const MAX_PIPS = 6;
-  const DEFAULT_CHAR_STATE = { hp: 0, stress: 0, hope: 2 };
+  const DEFAULT_CHAR = {
+    hp: 0, stress: 0, hope: 2,
+    name: "", ancestry: "—", charClass: "—", portrait: "",
+    evasion: 10, proficiency: 1, traits: [], features: [], domains: []
+  };
 
   let db, spotlightRef, rosterRef, advRef, mapRef;
   let players = [], spotlightId = null;
@@ -456,11 +549,23 @@ layout: null
       renderPlayerGrid();
     });
 
+    // ── Seed static character data to Firestore if missing ───────────────
+    await Promise.all(SEED_CHARACTERS.map(async (seed) => {
+      const ref = doc(db, "characters", seed.docId);
+      const snap = await getDoc(ref).catch(() => null);
+      const { docId, ...seedData } = seed;
+      if (!snap || !snap.exists()) {
+        await setDoc(ref, { ...DEFAULT_CHAR, ...seedData }).catch(() => {});
+      } else if (!('name' in snap.data())) {
+        await updateDoc(ref, seedData).catch(() => {});
+      }
+    }));
+
     // ── Character states ──────────────────────────────────────────────────
-    CHARACTERS.forEach(c => {
-      charStates[c.docId] = { ...DEFAULT_CHAR_STATE };
+    SEED_CHARACTERS.forEach(c => {
+      charStates[c.docId] = { ...DEFAULT_CHAR, name: c.name };
       charUnsubs[c.docId] = onSnapshot(doc(db, "characters", c.docId), (d) => {
-        charStates[c.docId] = d.exists() ? { ...DEFAULT_CHAR_STATE, ...d.data() } : { ...DEFAULT_CHAR_STATE };
+        charStates[c.docId] = d.exists() ? { ...DEFAULT_CHAR, ...d.data() } : { ...DEFAULT_CHAR, name: c.name };
         updateCardPips(c.docId);
       });
     });
@@ -491,8 +596,12 @@ layout: null
     document.getElementById("create-adv-btn").onclick = createAdversary;
 
     // ── Sheet drawer ──────────────────────────────────────────────────────
-    document.getElementById("drawer-close").onclick   = closeDrawer;
-    document.getElementById("drawer-overlay").onclick = closeDrawer;
+    document.getElementById("drawer-close").onclick    = closeDrawer;
+    document.getElementById("drawer-overlay").onclick  = closeDrawer;
+    document.getElementById("edit-add-feature").onclick = () => addFeatureRow("", "");
+    document.getElementById("edit-save-btn").onclick    = saveEditForm;
+    document.getElementById("edit-cancel-btn").onclick  = closeEditForm;
+    document.getElementById("edit-portrait").addEventListener("blur", updatePortraitPreview);
   };
 
   // ── Player grid ───────────────────────────────────────────────────────────
@@ -501,19 +610,18 @@ layout: null
     const grid = document.getElementById("player-grid");
     grid.innerHTML = "";
     players.forEach(p => {
-      const char = CHARACTERS.find(c => c.docId === p.docId);
-      const state = charStates[p.docId] || { ...DEFAULT_CHAR_STATE };
+      const char = charStates[p.docId] || { ...DEFAULT_CHAR, name: p.name };
       const isSpotlight = p.docId === spotlightId;
 
       const card = document.createElement("div");
       card.className = "player-card" + (isSpotlight ? " spotlight" : "");
       card.id = "player-card-" + p.docId;
 
-      const portraitHtml = char && char.portrait
+      const portraitHtml = char.portrait
         ? `<img class="portrait-thumb" src="${char.portrait}" alt="${p.name}">`
         : `<div class="portrait-placeholder">⚔</div>`;
 
-      const traitHtml = char && char.traits.length
+      const traitHtml = char.traits?.length
         ? `<div class="trait-grid">${char.traits.map(t =>
             `<div class="trait-cell">
               <div class="trait-label">${t.name.slice(0,3)}</div>
@@ -527,7 +635,7 @@ layout: null
           ${portraitHtml}
           <div>
             <div class="card-name">${p.name}</div>
-            <div class="card-subtitle">${char ? `${char.ancestry} • ${char.charClass}` : (p.className || "—")}</div>
+            <div class="card-subtitle">${char.ancestry || "—"} • ${char.charClass || "—"}</div>
           </div>
         </div>
         ${traitHtml}
@@ -547,25 +655,23 @@ layout: null
           <button class="spotlight-btn${isSpotlight ? " active" : ""}" data-spotlight="${p.docId}">
             ${isSpotlight ? "In Spotlight" : "Give Spotlight"}
           </button>
-          ${char ? `<button class="sheet-btn" data-sheet="${p.docId}">Full Sheet →</button>` : ""}
+          <button class="sheet-btn" data-sheet="${p.docId}">Full Sheet →</button>
           <button class="remove-btn" data-remove="${p.docId}">× Remove</button>
         </div>`;
 
       card.querySelector("[data-spotlight]").onclick = async () => {
         try { await setDoc(spotlightRef, { activeId: p.docId }); } catch {}
       };
-      if (char) {
-        card.querySelector("[data-sheet]").onclick = () => openDrawer(char);
-      }
+      card.querySelector("[data-sheet]").onclick = () => openDrawer(p.docId);
       card.querySelector("[data-remove]").onclick = async () => {
         players = players.filter(x => x.docId !== p.docId);
         try { await updateDoc(rosterRef, { players }); } catch {}
       };
 
       grid.appendChild(card);
-      buildPips(p.docId, "hp",     state.hp,     "");
-      buildPips(p.docId, "stress", state.stress, "stress");
-      buildPips(p.docId, "hope",   state.hope,   "hope");
+      buildPips(p.docId, "hp",     char.hp     || 0, "");
+      buildPips(p.docId, "stress", char.stress || 0, "stress");
+      buildPips(p.docId, "hope",   char.hope   || 0, "hope");
     });
   }
 
@@ -582,14 +688,14 @@ layout: null
   }
 
   function updateCardPips(docId) {
-    const state = charStates[docId] || { ...DEFAULT_CHAR_STATE };
-    buildPips(docId, "hp",     state.hp,     "");
-    buildPips(docId, "stress", state.stress, "stress");
-    buildPips(docId, "hope",   state.hope,   "hope");
+    const state = charStates[docId] || { ...DEFAULT_CHAR };
+    buildPips(docId, "hp",     state.hp     || 0, "");
+    buildPips(docId, "stress", state.stress || 0, "stress");
+    buildPips(docId, "hope",   state.hope   || 0, "hope");
   }
 
   async function togglePip(docId, key, index, colorClass) {
-    const state = charStates[docId] || { ...DEFAULT_CHAR_STATE };
+    const state = charStates[docId] || { ...DEFAULT_CHAR };
     const newVal = state[key] === index + 1 ? index : index + 1;
     charStates[docId] = { ...state, [key]: newVal };
     buildPips(docId, key, newVal, colorClass);
@@ -615,19 +721,21 @@ layout: null
 
   // ── Sheet drawer ──────────────────────────────────────────────────────────
 
-  function openDrawer(char) {
-    document.getElementById("drawer-char-name").textContent = char.name;
-    document.getElementById("drawer-char-subtitle").textContent = `${char.ancestry} • ${char.charClass}`;
+  function openDrawer(docId) {
+    const char = charStates[docId] || { ...DEFAULT_CHAR };
+    document.getElementById("drawer-char-name").textContent = char.name || docId;
+    document.getElementById("drawer-char-subtitle").textContent = `${char.ancestry || "—"} • ${char.charClass || "—"}`;
     const frame = document.getElementById("drawer-portrait");
     const img   = document.getElementById("drawer-portrait-img");
     if (char.portrait) { img.src = char.portrait; frame.style.display = "flex"; }
     else frame.style.display = "none";
-    document.getElementById("drawer-features").innerHTML = char.features.length
+    document.getElementById("drawer-features").innerHTML = (char.features || []).length
       ? char.features.map(f => `<div class="feature"><b>${f.name}:</b> ${f.desc}</div>`).join("")
       : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No features listed yet.</div>`;
-    document.getElementById("drawer-domains").innerHTML = char.domains.length
+    document.getElementById("drawer-domains").innerHTML = (char.domains || []).length
       ? char.domains.map(d => `<span class="badge">${d}</span>`).join("")
       : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No domains listed yet.</div>`;
+    document.getElementById("drawer-edit-btn").onclick = () => openEditForm(docId);
     document.getElementById("sheet-drawer").classList.add("open");
     document.getElementById("drawer-overlay").classList.add("visible");
   }
@@ -635,6 +743,101 @@ layout: null
   function closeDrawer() {
     document.getElementById("sheet-drawer").classList.remove("open");
     document.getElementById("drawer-overlay").classList.remove("visible");
+    document.getElementById("sheet-drawer").classList.remove("editing");
+  }
+
+  // ── Character edit form ───────────────────────────────────────────────────
+
+  const TRAIT_NAMES = ["Agility","Strength","Finesse","Instinct","Presence","Knowledge"];
+  let editingDocId = null;
+
+  function openEditForm(docId) {
+    editingDocId = docId;
+    const char = charStates[docId] || { ...DEFAULT_CHAR };
+    document.getElementById("edit-portrait").value  = char.portrait || "";
+    document.getElementById("edit-name").value      = char.name || "";
+    document.getElementById("edit-ancestry").value  = (char.ancestry  === "—" ? "" : char.ancestry)  || "";
+    document.getElementById("edit-class").value     = (char.charClass === "—" ? "" : char.charClass) || "";
+    document.getElementById("edit-evasion").value   = char.evasion     ?? 10;
+    document.getElementById("edit-prof").value      = char.proficiency ?? 1;
+    updatePortraitPreview();
+    const traitsEl = document.getElementById("edit-traits");
+    traitsEl.innerHTML = "";
+    TRAIT_NAMES.forEach(k => {
+      const existing = (char.traits || []).find(t => t.name === k);
+      const div = document.createElement("div");
+      div.className = "adv-form-field";
+      div.innerHTML = `<label>${k.slice(0,3).toUpperCase()}</label><input data-trait="${k}" type="text" value="${escHtml(existing ? existing.val : "0")}" style="width:48px;">`;
+      traitsEl.appendChild(div);
+    });
+    renderEditFeatures(char.features || []);
+    document.getElementById("edit-domains").value = (char.domains || []).join(", ");
+    document.getElementById("sheet-drawer").classList.add("editing");
+  }
+
+  function renderEditFeatures(features) {
+    document.getElementById("edit-features-list").innerHTML = "";
+    (features || []).forEach(f => addFeatureRow(f.name || "", f.desc || ""));
+  }
+
+  function addFeatureRow(name, desc) {
+    const list = document.getElementById("edit-features-list");
+    const row  = document.createElement("div");
+    row.className = "edit-feature-row";
+    row.innerHTML = `
+      <input class="edit-feat-name" type="text" placeholder="Feature name" value="${escHtml(name)}">
+      <input class="edit-feat-desc" type="text" placeholder="Description" value="${escHtml(desc)}">
+      <button class="delete-btn" style="padding:4px 8px;font-size:11px;flex-shrink:0;">×</button>`;
+    row.querySelector(".delete-btn").onclick = () => row.remove();
+    list.appendChild(row);
+  }
+
+  function updatePortraitPreview() {
+    const src     = document.getElementById("edit-portrait").value.trim();
+    const preview = document.getElementById("drawer-portrait-preview");
+    if (src) {
+      preview.src = src;
+      preview.style.display = "block";
+      preview.onerror = () => { preview.style.opacity = "0.3"; };
+      preview.onload  = () => { preview.style.opacity = "1"; };
+    } else {
+      preview.style.display = "none";
+    }
+  }
+
+  function closeEditForm() {
+    const docId = editingDocId;
+    editingDocId = null;
+    document.getElementById("sheet-drawer").classList.remove("editing");
+    if (docId) openDrawer(docId);
+  }
+
+  async function saveEditForm() {
+    if (!editingDocId) return;
+    const docId = editingDocId;
+    const portrait    = document.getElementById("edit-portrait").value.trim();
+    const name        = document.getElementById("edit-name").value.trim();
+    const ancestry    = document.getElementById("edit-ancestry").value.trim() || "—";
+    const charClass   = document.getElementById("edit-class").value.trim()    || "—";
+    const evasion     = parseInt(document.getElementById("edit-evasion").value) || 10;
+    const proficiency = parseInt(document.getElementById("edit-prof").value)    || 1;
+    const traits = Array.from(document.querySelectorAll("#edit-traits [data-trait]")).map(inp => ({
+      name: inp.dataset.trait, val: inp.value.trim() || "0"
+    }));
+    const features = Array.from(document.querySelectorAll("#edit-features-list .edit-feature-row")).map(row => ({
+      name: row.querySelector(".edit-feat-name").value.trim(),
+      desc: row.querySelector(".edit-feat-desc").value.trim()
+    })).filter(f => f.name);
+    const domains = document.getElementById("edit-domains").value
+      .split(",").map(d => d.trim()).filter(Boolean);
+    const updated = { portrait, name, ancestry, charClass, evasion, proficiency, traits, features, domains };
+    charStates[docId] = { ...charStates[docId], ...updated };
+    closeEditForm();
+    try { await updateDoc(doc(db, "characters", docId), updated); } catch {}
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
   // ── Adversaries ───────────────────────────────────────────────────────────

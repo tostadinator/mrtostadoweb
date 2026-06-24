@@ -317,41 +317,16 @@ layout: null
     { docId: "paul",         name: "Paul",         label: "PUL" },
   ];
 
-  const CHARACTERS = [
-    {
-      docId: "tostadinator",
-      portrait: "/daggerheart/assets/tostadinator.jpg",
-      name: "Tostadinator",
-      ancestry: "Fungril • Underborne",
-      charClass: "Sorcerer (Primal Origin)",
-      traits: [
-        { name: "Agility",   val: "0"  },
-        { name: "Strength",  val: "-1" },
-        { name: "Finesse",   val: "0"  },
-        { name: "Instinct",  val: "+2" },
-        { name: "Presence",  val: "+1" },
-        { name: "Knowledge", val: "+1" },
-      ],
-      evasion: 10, proficiency: 1,
-      features: [
-        { name: "Fungril Network",  desc: "Instinct Roll (12) to communicate telepathically with other Fungril across any distance." },
-        { name: "Death Connection", desc: "Touching a recent corpse, mark a Stress to extract one memory tied to an emotion or sensation." },
-        { name: "Low-Light Living", desc: "Advantage on rolls to hide, investigate, or perceive in low light or heavy shadow." },
-      ],
-      domains: ["Arcana", "Midnight"],
-    },
-    { docId: "lola",  name: "Lola",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "maya",  name: "Maya",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "drew",  name: "Drew",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "oli",   name: "Oli",   ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "cal",   name: "Cal",   ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "caleb", name: "Caleb", ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-    { docId: "paul",  name: "Paul",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
-  ];
+
 
   const DEFAULT_BG = "https://i.redd.it/g39kbyrmglpc1.jpeg";
   const MAX_PIPS = 6;
   const DEFAULT_CHAR_STATE = { hp: 0, stress: 0, hope: 2 };
+  const DEFAULT_CHAR = {
+    hp: 0, stress: 0, hope: 2,
+    name: "", ancestry: "—", charClass: "—", portrait: "",
+    evasion: 10, proficiency: 1, traits: [], features: [], domains: []
+  };
 
   let db, mapRef, poolsRef, spotlightRef;
   let mapState = { bgUrl: DEFAULT_BG, tokens: {} }, dragging = null, dragMoved = false;
@@ -360,6 +335,7 @@ layout: null
   let fearState = { fear: 0 };
   let spotlightDocId = null;
   const playerStates = {};
+  const charData = {};
 
   window.initApp = async function() {
     if (started) return; started = true;
@@ -524,6 +500,7 @@ layout: null
     container.innerHTML = "";
     PARTY.forEach(p => {
       playerStates[p.docId] = { ...DEFAULT_CHAR_STATE };
+      charData[p.docId] = { ...DEFAULT_CHAR, name: p.name };
       const card = document.createElement("div");
       card.className = "strip-card";
       card.id = "strip-" + p.docId;
@@ -531,8 +508,13 @@ layout: null
       container.appendChild(card);
       renderStripCard(p.docId);
       onSnapshot(doc(db, "characters", p.docId), (d) => {
-        playerStates[p.docId] = d.exists() ? { ...DEFAULT_CHAR_STATE, ...d.data() } : { ...DEFAULT_CHAR_STATE };
+        const data = d.exists() ? { ...DEFAULT_CHAR, ...d.data() } : { ...DEFAULT_CHAR, name: p.name };
+        charData[p.docId]    = data;
+        playerStates[p.docId] = data;
         renderStripCard(p.docId);
+        if (activeDocId === p.docId && document.getElementById("sheet-drawer").classList.contains("open")) {
+          renderStaticSheet(charData[p.docId]);
+        }
       });
     });
   }
@@ -563,9 +545,8 @@ layout: null
   }
 
   function openSheet(docId) {
-    const char = CHARACTERS.find(c => c.docId === docId);
-    if (!char) return;
     activeDocId = docId;
+    const char = charData[docId] || { ...DEFAULT_CHAR, name: PARTY.find(p => p.docId === docId)?.name || docId };
     renderStaticSheet(char);
     subscribeSheetPips(docId);
     document.getElementById("sheet-drawer").classList.add("open");
@@ -604,11 +585,11 @@ layout: null
   function buildDrawerPicker(currentDocId) {
     const picker = document.getElementById("drawer-char-picker");
     picker.innerHTML = "";
-    CHARACTERS.forEach(c => {
+    PARTY.forEach(p => {
       const btn = document.createElement("button");
-      btn.className = "char-btn" + (c.docId === currentDocId ? " active" : "");
-      btn.textContent = c.name;
-      btn.onclick = () => openSheet(c.docId);
+      btn.className = "char-btn" + (p.docId === currentDocId ? " active" : "");
+      btn.textContent = charData[p.docId]?.name || p.name;
+      btn.onclick = () => openSheet(p.docId);
       picker.appendChild(btn);
     });
   }
