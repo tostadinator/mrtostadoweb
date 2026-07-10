@@ -220,6 +220,70 @@ main {
   color: #e5e7eb;
 }
 
+/* ── Classes ── */
+.class-header {
+  padding: 3rem 0 1.5rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.back-link:hover { color: var(--accent); }
+
+.class-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+main h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 2.5rem 0 1rem;
+  color: var(--text);
+  border-left: 3px solid var(--accent);
+  padding-left: 0.75rem;
+}
+
+main p, main li {
+  color: #d1d5db;
+}
+
+.cta-block {
+  margin-top: 2.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  text-align: center;
+}
+
+.cta-block h3 {
+  margin: 0 0 0.5rem;
+  color: var(--text);
+}
+
+.cta-block p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+
+.cta-button {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.6rem 1.5rem;
+  border-radius: var(--radius);
+}
+.cta-button:hover { background: var(--accent-hover); color: #fff; }
+
 /* ── Footer ── */
 footer {
   border-top: 1px solid var(--border);
