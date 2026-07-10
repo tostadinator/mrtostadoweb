@@ -1,0 +1,1117 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GM Tools — Daggerheart</title>
+<style>
+  /* ── Base ─────────────────────────────────────────────────────────────── */
+  body {
+    margin: 0;
+    font-family: 'Georgia', serif;
+    background: radial-gradient(circle at top, #1b1330, #0a0712);
+    color: #e8e2f5;
+    padding: 24px 24px 40px;
+  }
+  .home { max-width: 960px; margin: 0 auto; }
+  h1 { text-align: center; color: #c9a8ff; font-size: 32px; margin: 0 0 4px; }
+  .subtitle { text-align: center; color: #9b8bbf; font-size: 14px; margin-bottom: 24px; }
+  .sync-status { text-align: center; font-size: 12px; color: #7fdca0; margin-bottom: 16px; min-height: 16px; }
+  .sync-status.error { color: #ff8a8a; }
+  .section-title {
+    color: #c9a8ff; font-size: 13px; text-transform: uppercase;
+    letter-spacing: 1px; margin: 28px 0 12px;
+  }
+
+  /* ── Nav ─────────────────────────────────────────────────────────────── */
+  .nav-card {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: #1a1428; border: 2px solid #5b3e96;
+    border-radius: 14px; padding: 14px 20px;
+    text-decoration: none; color: #e8e2f5;
+    box-shadow: 0 0 16px rgba(120,80,220,0.2);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .nav-card:hover { border-color: #c9a8ff; box-shadow: 0 0 24px rgba(170,120,255,0.4); }
+  .nav-card-icon { font-size: 22px; }
+  .nav-card-label { font-size: 15px; font-weight: bold; color: #c9a8ff; }
+
+  /* ── Player cards ────────────────────────────────────────────────────── */
+  .player-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .player-card {
+    background: #1a1428; border: 2px solid #3a2a5c; border-radius: 14px;
+    padding: 14px; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .player-card.spotlight {
+    border-color: #c9a8ff; box-shadow: 0 0 18px rgba(170,120,255,0.45);
+  }
+  .card-header { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+  .portrait-thumb {
+    width: 52px; height: 52px; border-radius: 8px; object-fit: cover;
+    border: 2px solid #5b3e96; flex-shrink: 0;
+  }
+  .portrait-placeholder {
+    width: 52px; height: 52px; border-radius: 8px;
+    background: #241a3a; border: 2px solid #3a2a5c; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #5b3e96;
+  }
+  .card-name { font-size: 17px; font-weight: bold; color: #c9a8ff; margin-bottom: 2px; }
+  .card-subtitle { font-size: 12px; color: #9b8bbf; }
+
+  .trait-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 6px;
+  }
+  .trait-cell { background: #241a3a; border-radius: 6px; padding: 4px 2px; text-align: center; }
+  .trait-label { font-size: 9px; color: #9b8bbf; text-transform: uppercase; letter-spacing: 0.5px; }
+  .trait-value { font-size: 14px; font-weight: bold; color: #fff; }
+
+  .stats-line { font-size: 11px; color: #9b8bbf; margin-bottom: 8px; }
+  .stats-line span { color: #c9a8ff; font-weight: bold; }
+
+  .resource-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+  .resource-label { font-size: 11px; color: #9b8bbf; min-width: 42px; }
+  .pips { display: flex; gap: 4px; }
+  .pip {
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 1.5px solid #5b3e96; cursor: pointer; background: transparent; transition: all 0.12s;
+  }
+  .pip.filled { background: #c9a8ff; box-shadow: 0 0 5px #c9a8ff; border-color: #c9a8ff; }
+  .pip.stress { border-color: #c98a4a; }
+  .pip.stress.filled { background: #e3b06a; border-color: #c98a4a; box-shadow: 0 0 5px #e3b06a; }
+  .pip.hope { border-color: #4ac98a; }
+  .pip.hope.filled { background: #7fdca0; border-color: #4ac98a; box-shadow: 0 0 5px #7fdca0; }
+
+  .card-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .spotlight-btn {
+    flex: 1; background: #241a3a; color: #c9a8ff; border: 1.5px solid #5b3e96;
+    border-radius: 8px; padding: 6px 8px; font-size: 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .spotlight-btn:hover { border-color: #c9a8ff; background: #3a2a5c; }
+  .spotlight-btn.active { background: #c9a8ff; color: #1a1428; font-weight: bold; border-color: #c9a8ff; }
+  .sheet-btn {
+    background: transparent; color: #9b8bbf; border: 1.5px solid #3a2a5c;
+    border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .sheet-btn:hover { border-color: #c9a8ff; color: #c9a8ff; }
+  .remove-btn {
+    background: transparent; color: #5c3a3a; border: 1px solid #3a2020;
+    border-radius: 8px; padding: 6px 8px; font-size: 11px; cursor: pointer; transition: all 0.15s;
+  }
+  .remove-btn:hover { background: #3a1010; color: #e3a0a0; border-color: #963e3e; }
+
+  /* ── Add player form ──────────────────────────────────────────────────── */
+  .add-player-form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .add-player-form input {
+    flex: 1; min-width: 120px; padding: 8px 12px; border-radius: 8px;
+    border: 2px solid #5b3e96; background: #1a1428; color: #e8e2f5; font-size: 13px; outline: none;
+  }
+  .add-player-form input:focus { border-color: #c9a8ff; }
+  .btn-purple {
+    background: linear-gradient(135deg, #5b3e96, #8a5fc9); color: white;
+    border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px;
+  }
+
+  /* ── Adversary section ───────────────────────────────────────────────── */
+  .adversary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+  }
+  .adversary-card {
+    background: #120808; border: 2px solid #5c2a2a; border-radius: 14px;
+    padding: 12px; transition: border-color 0.2s;
+  }
+  .adversary-card:hover { border-color: #963e3e; }
+  .adversary-name-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;
+  }
+  .adversary-name { font-size: 16px; font-weight: bold; color: #e3a0a0; }
+  .adv-subtitle { font-size: 12px; color: #c98a8a; margin-bottom: 4px; }
+  .adv-description { font-size: 11px; color: #9b6e6e; font-style: italic; margin-bottom: 8px; line-height: 1.4; }
+  .adv-stat-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 8px;
+  }
+  .adv-stat-cell { background: #1e0808; border-radius: 5px; padding: 4px 2px; text-align: center; }
+  .adv-stat-label { font-size: 9px; color: #9b6e6e; text-transform: uppercase; letter-spacing: 0.5px; }
+  .adv-stat-val { font-size: 14px; font-weight: bold; color: #e3a0a0; }
+  .adv-attack-line { font-size: 11px; color: #c98a8a; margin-bottom: 4px; }
+  .adv-stats-line { font-size: 11px; color: #c98a8a; margin-bottom: 4px; }
+  .adv-stats-line span { color: #e3a0a0; font-weight: bold; }
+  .pip.hp-adv { border-color: #963e3e; }
+  .pip.hp-adv.filled { background: #e3a0a0; border-color: #963e3e; box-shadow: 0 0 5px #963e3e; }
+  .pip.stress-adv { border-color: #c98a4a; }
+  .pip.stress-adv.filled { background: #e3b06a; border-color: #c98a4a; box-shadow: 0 0 5px #c98a4a; }
+  .adversary-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .add-map-btn {
+    flex: 1; background: linear-gradient(135deg, #963e3e, #c96060); color: white;
+    border: none; border-radius: 8px; padding: 7px 10px; font-size: 12px; cursor: pointer;
+  }
+  .delete-btn {
+    background: transparent; color: #963e3e; border: 1px solid #963e3e;
+    border-radius: 8px; padding: 7px 10px; font-size: 12px; cursor: pointer;
+  }
+  .delete-btn:hover { background: #963e3e; color: #fff; }
+  details.adv-features { margin: 6px 0; }
+  details.adv-features summary {
+    font-size: 11px; color: #c98a8a; cursor: pointer; user-select: none;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  details.adv-features summary:hover { color: #e3a0a0; }
+  .adv-feature-item {
+    background: #1e0808; border-radius: 7px; padding: 6px 8px; margin-top: 4px;
+    font-size: 11px; color: #c98a8a; line-height: 1.4;
+  }
+  .adv-feature-item b { color: #e3a0a0; }
+
+  /* Adversary create form */
+  .adv-form-toggle {
+    background: transparent; color: #e3a0a0; border: 1.5px solid #5c2a2a;
+    border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer;
+    margin-bottom: 12px; transition: all 0.15s;
+  }
+  .adv-form-toggle:hover { background: #1e0808; border-color: #963e3e; }
+  .adv-form {
+    display: none; background: #120808; border: 2px solid #5c2a2a;
+    border-radius: 12px; padding: 14px; margin-bottom: 14px;
+  }
+  .adv-form.open { display: block; }
+  .adv-form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: flex-end; }
+  .adv-form-field { display: flex; flex-direction: column; }
+  .adv-form-label { font-size: 10px; color: #c98a8a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .adv-form input, .adv-form select {
+    padding: 7px 10px; border-radius: 7px; border: 1.5px solid #5c2a2a;
+    background: #0a0404; color: #e8e2f5; font-size: 13px; outline: none;
+  }
+  .adv-form input:focus, .adv-form select:focus { border-color: #963e3e; }
+  .adv-form input.wide { flex: 1; }
+  .adv-form input.short { width: 52px; }
+  .adv-form select.short { width: 90px; }
+  .adv-trait-inputs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 10px; }
+  .adv-feat-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: flex-end; }
+  .adv-feat-row input { padding: 6px 8px; border-radius: 6px; border: 1.5px solid #5c2a2a; background: #0a0404; color: #e8e2f5; font-size: 12px; outline: none; }
+  .adv-feat-row input:focus { border-color: #963e3e; }
+  .adv-feat-row select { padding: 6px 6px; border-radius: 6px; border: 1.5px solid #5c2a2a; background: #0a0404; color: #e8e2f5; font-size: 12px; outline: none; width: 110px; flex-shrink: 0; }
+  .adv-feat-name { width: 28%; flex-shrink: 0; }
+  .adv-feat-desc { flex: 1; }
+  .adv-add-feat-btn {
+    width: 100%; background: transparent; color: #c98a8a;
+    border: 1.5px dashed #5c2a2a; border-radius: 8px; padding: 7px; font-size: 12px; cursor: pointer; margin-bottom: 10px;
+  }
+  .adv-add-feat-btn:hover { border-color: #963e3e; color: #e3a0a0; }
+  .create-adv-btn {
+    width: 100%; background: linear-gradient(135deg, #963e3e, #c96060); color: white;
+    border: none; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: bold; cursor: pointer;
+  }
+
+  /* ── Sheet drawer ─────────────────────────────────────────────────────── */
+  #sheet-drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 200;
+    width: min(420px, 100vw);
+    background: radial-gradient(circle at top, #1b1330, #0a0712);
+    border-left: 2px solid #5b3e96;
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    overflow-y: auto; padding: 16px 20px 24px;
+    box-sizing: border-box;
+  }
+  #sheet-drawer.open { transform: translateX(0); }
+  #drawer-overlay {
+    position: fixed; inset: 0; z-index: 199;
+    background: rgba(0,0,0,0.5); display: none;
+  }
+  #drawer-overlay.visible { display: block; }
+  #drawer-close {
+    background: transparent; border: 1.5px solid #5b3e96; color: #9b8bbf;
+    border-radius: 8px; padding: 5px 10px; font-size: 13px; cursor: pointer; margin-bottom: 12px;
+  }
+  #drawer-close:hover { background: #3a2a5c; color: #c9a8ff; }
+  #drawer-char-name { text-align: center; color: #c9a8ff; margin: 4px 0 2px; font-size: 22px; font-weight: bold; }
+  #drawer-char-subtitle { text-align: center; color: #9b8bbf; font-size: 13px; margin-bottom: 12px; }
+  .portrait-frame { display: flex; justify-content: center; margin-bottom: 12px; }
+  .portrait-img { width: 100%; max-width: 280px; border-radius: 12px; border: 2px solid #5b3e96; box-shadow: 0 0 24px rgba(170,120,255,0.45); display: block; }
+  .drawer-section { margin-bottom: 14px; border-top: 1px solid #3a2a5c; padding-top: 10px; }
+  .drawer-section-title { color: #c9a8ff; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .feature { background: #241a3a; border-radius: 8px; padding: 8px; margin-bottom: 6px; font-size: 12px; line-height: 1.4; }
+  .feature b { color: #c9a8ff; }
+  .badge { display: inline-block; background: #3a2a5c; color: #c9a8ff; border-radius: 6px; padding: 2px 8px; font-size: 11px; margin-right: 4px; }
+
+  /* ── Edit form (in drawer) ─────────────────────────────────────────────── */
+  .drawer-edit-btn {
+    width: 100%; background: transparent; color: #9b8bbf; border: 1.5px solid #3a2a5c;
+    border-radius: 8px; padding: 9px; font-size: 13px; cursor: pointer; margin-top: 14px;
+  }
+  .drawer-edit-btn:hover { border-color: #c9a8ff; color: #c9a8ff; }
+  .edit-save-btn {
+    flex: 1; background: linear-gradient(135deg, #5b3e96, #8a5fc9); color: white;
+    border: none; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: bold; cursor: pointer;
+  }
+  .edit-cancel-btn {
+    background: transparent; color: #9b8bbf; border: 1.5px solid #3a2a5c;
+    border-radius: 8px; padding: 10px 14px; font-size: 13px; cursor: pointer;
+  }
+  .edit-cancel-btn:hover { border-color: #c9a8ff; color: #c9a8ff; }
+  .edit-feature-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .edit-feature-row input {
+    padding: 6px 8px; border-radius: 6px; border: 1.5px solid #3a2a5c;
+    background: #0a0712; color: #e8e2f5; font-size: 12px; outline: none;
+  }
+  .edit-feature-row input:focus { border-color: #c9a8ff; }
+  .edit-feat-name { width: 35%; flex-shrink: 0; }
+  .edit-feat-desc { flex: 1; }
+  .edit-add-btn {
+    width: 100%; background: transparent; color: #9b8bbf;
+    border: 1.5px dashed #3a2a5c; border-radius: 8px; padding: 7px 12px; font-size: 12px; cursor: pointer; margin-bottom: 10px;
+  }
+  .edit-add-btn:hover { border-color: #c9a8ff; color: #c9a8ff; }
+  #drawer-edit-form { display: none; }
+  #sheet-drawer.editing #drawer-char-name,
+  #sheet-drawer.editing #drawer-char-subtitle,
+  #sheet-drawer.editing #drawer-portrait,
+  #sheet-drawer.editing .drawer-section,
+  #sheet-drawer.editing .drawer-edit-btn { display: none; }
+  #sheet-drawer.editing #drawer-edit-form { display: block; }
+  #drawer-edit-form label {
+    display: block; font-size: 10px; color: #9b8bbf;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;
+  }
+  #drawer-edit-form input {
+    padding: 7px 10px; border-radius: 7px; border: 1.5px solid #3a2a5c;
+    background: #0a0712; color: #e8e2f5; font-size: 13px; outline: none;
+    width: 100%; box-sizing: border-box;
+  }
+  #drawer-edit-form input:focus { border-color: #c9a8ff; }
+  #drawer-edit-form input.short { width: 56px; }
+  #drawer-edit-form .edit-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: flex-end; flex-wrap: wrap; }
+  #drawer-edit-form .edit-field { display: flex; flex-direction: column; flex: 1; }
+  #drawer-edit-form .edit-field.no-grow { flex: 0; }
+  #drawer-portrait-preview {
+    max-width: 80px; border-radius: 6px; margin-top: 4px;
+    border: 1px solid #5b3e96; display: none;
+  }
+
+  /* ── Auth gate ────────────────────────────────────────────────────────── */
+  #auth-gate {
+    position: fixed; inset: 0; z-index: 9999;
+    background: radial-gradient(circle at top, #1b1330, #0a0712);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gate-box { text-align: center; max-width: 320px; width: 100%; padding: 32px; }
+  .gate-title { font-size: 32px; color: #c9a8ff; margin-bottom: 4px; }
+  .gate-sub { font-size: 14px; color: #9b8bbf; margin-bottom: 28px; }
+  .gate-input {
+    width: 100%; box-sizing: border-box; padding: 12px 16px;
+    border-radius: 10px; border: 2px solid #5b3e96;
+    background: #1a1428; color: #e8e2f5; font-size: 16px; outline: none; margin-bottom: 12px;
+  }
+  .gate-input:focus { border-color: #c9a8ff; }
+  .gate-btn {
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #5b3e96, #8a5fc9);
+    color: white; font-size: 15px; font-weight: bold; cursor: pointer;
+  }
+  .gate-error { color: #ff8a8a; font-size: 13px; margin-top: 10px; min-height: 18px; }
+</style>
+</head>
+<body>
+
+<div id="auth-gate">
+  <div class="gate-box">
+    <div class="gate-title">⚔️ Daggerheart</div>
+    <div class="gate-sub">GM Tools</div>
+    <input class="gate-input" id="pw-input" type="password" placeholder="Team password" autocomplete="current-password">
+    <button class="gate-btn" id="pw-btn">Enter</button>
+    <div class="gate-error" id="pw-error"></div>
+  </div>
+</div>
+
+<div class="home">
+  <h1>GM Tools</h1>
+  <div class="subtitle">Session control for the GM</div>
+  <div class="sync-status" id="sync-status">Connecting...</div>
+
+  <div class="section-title">Pages</div>
+  <a href="./battlemap/" class="nav-card">
+    <div class="nav-card-icon">🗺️</div>
+    <div class="nav-card-label">Battle Map</div>
+  </a>
+
+  <div class="section-title">Player Roster</div>
+  <div class="player-grid" id="player-grid"></div>
+  <div class="add-player-form">
+    <input id="new-player-name" type="text" placeholder="Player name" autocomplete="off">
+    <input id="new-player-class" type="text" placeholder="Class (optional)" autocomplete="off">
+    <button class="btn-purple" id="add-player-btn">+ Add Player</button>
+  </div>
+
+  <div class="section-title">Adversaries</div>
+  <button class="adv-form-toggle" id="adv-form-toggle">+ New Adversary</button>
+  <div class="adv-form" id="adv-form">
+    <div class="adv-form-row">
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Name</label>
+        <input id="adv-name" type="text" placeholder="e.g. Bear" class="wide">
+      </div>
+    </div>
+    <div class="adv-form-row">
+      <div class="adv-form-field">
+        <label class="adv-form-label">Tier</label>
+        <input id="adv-tier" type="number" value="1" min="1" max="4" class="short">
+      </div>
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Role</label>
+        <input id="adv-role" type="text" placeholder="Bruiser, Skulk, Leader…" class="wide">
+      </div>
+    </div>
+    <div class="adv-form-row">
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Description</label>
+        <input id="adv-desc" type="text" placeholder="A large bear with thick fur…" class="wide">
+      </div>
+    </div>
+    <div class="adv-form-row">
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Motives &amp; Tactics</label>
+        <input id="adv-motives" type="text" placeholder="Climb, defend territory, pummel…" class="wide">
+      </div>
+    </div>
+    <div class="adv-form-row">
+      <div class="adv-form-field">
+        <label class="adv-form-label">Difficulty</label>
+        <input id="adv-difficulty" type="number" value="12" class="short">
+      </div>
+      <div class="adv-form-field">
+        <label class="adv-form-label">Minor Thr.</label>
+        <input id="adv-minor" type="number" value="6" class="short">
+      </div>
+      <div class="adv-form-field">
+        <label class="adv-form-label">Major Thr.</label>
+        <input id="adv-major" type="number" value="12" class="short">
+      </div>
+      <div class="adv-form-field">
+        <label class="adv-form-label">HP</label>
+        <input id="adv-maxhp" type="number" value="4" min="1" max="30" class="short">
+      </div>
+      <div class="adv-form-field">
+        <label class="adv-form-label">Stress</label>
+        <input id="adv-maxstress" type="number" value="2" min="0" max="20" class="short">
+      </div>
+    </div>
+    <div class="adv-form-row">
+      <div class="adv-form-field">
+        <label class="adv-form-label">Atk Bonus</label>
+        <input id="adv-atkbonus" type="number" value="0" class="short">
+      </div>
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Attack Name</label>
+        <input id="adv-atkname" type="text" placeholder="Claws" class="wide">
+      </div>
+      <div class="adv-form-field">
+        <label class="adv-form-label">Range</label>
+        <select id="adv-atkrange" class="short">
+          <option>Melee</option>
+          <option>Close</option>
+          <option>Far</option>
+          <option>Very Close</option>
+        </select>
+      </div>
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Damage</label>
+        <input id="adv-atkdmg" type="text" placeholder="1d8+3 phy" class="wide">
+      </div>
+    </div>
+    <div class="adv-form-row">
+      <div class="adv-form-field" style="flex:1;">
+        <label class="adv-form-label">Experience</label>
+        <input id="adv-exp" type="text" placeholder="Ambusher +3, Keen Senses +2" class="wide">
+      </div>
+    </div>
+    <label class="adv-form-label" style="margin-bottom:4px;display:block;">Features</label>
+    <div id="adv-features-list"></div>
+    <button type="button" class="adv-add-feat-btn" id="adv-add-feat">+ Add Feature</button>
+    <div class="adv-form-row" style="align-items:center;gap:10px;margin-top:2px;">
+      <div class="adv-form-field">
+        <label class="adv-form-label">Quantity</label>
+        <input id="adv-qty" type="number" value="1" min="1" max="10" class="short">
+      </div>
+      <button class="create-adv-btn" id="create-adv-btn" style="flex:1;margin-top:14px;">Create &amp; Add to Map</button>
+    </div>
+  </div>
+  <div class="adversary-grid" id="adversary-grid"></div>
+</div>
+
+<!-- Sheet drawer -->
+<div id="sheet-drawer">
+  <button id="drawer-close">✕ Close</button>
+  <div id="drawer-char-name">—</div>
+  <div id="drawer-char-subtitle">—</div>
+  <div class="portrait-frame" id="drawer-portrait" style="display:none;">
+    <img class="portrait-img" id="drawer-portrait-img" src="" alt="">
+  </div>
+  <div class="drawer-section">
+    <div class="drawer-section-title">Ancestry &amp; Community Features</div>
+    <div id="drawer-features"></div>
+  </div>
+  <div class="drawer-section">
+    <div class="drawer-section-title">Domains</div>
+    <div id="drawer-domains"></div>
+  </div>
+  <button class="drawer-edit-btn" id="drawer-edit-btn">✏ Edit Character</button>
+  <div id="drawer-edit-form">
+    <div class="edit-row">
+      <div class="edit-field">
+        <label>Portrait path or URL</label>
+        <input id="edit-portrait" type="text" placeholder="/daggerheart/portraits/name.jpg">
+        <img id="drawer-portrait-preview" src="" alt="">
+      </div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field"><label>Name</label><input id="edit-name" type="text"></div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field"><label>Ancestry</label><input id="edit-ancestry" type="text"></div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field"><label>Class</label><input id="edit-class" type="text"></div>
+    </div>
+    <div class="edit-row">
+      <div class="edit-field no-grow"><label>Evasion</label><input id="edit-evasion" type="number" class="short"></div>
+      <div class="edit-field no-grow"><label>Prof.</label><input id="edit-prof" type="number" class="short"></div>
+    </div>
+    <label>Traits</label>
+    <div class="adv-trait-inputs" id="edit-traits" style="margin-bottom:10px;"></div>
+    <label>Features</label>
+    <div id="edit-features-list"></div>
+    <button class="edit-add-btn" id="edit-add-feature">+ Add Feature</button>
+    <div class="edit-row">
+      <div class="edit-field"><label>Domains (comma-separated)</label><input id="edit-domains" type="text" placeholder="Arcana, Midnight"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="edit-save-btn" id="edit-save-btn">Save Changes</button>
+      <button class="edit-cancel-btn" id="edit-cancel-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+<div id="drawer-overlay"></div>
+
+<script>
+  const PASSWORD_HASH = "5bfa0151f57207a3c1688bebe2568444a943842d5e7c42b7d4d0742b6f12baa1";
+  async function sha256(msg) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+  async function checkAuth() {
+    const stored = localStorage.getItem("dh_auth");
+    if (stored === PASSWORD_HASH) { unlock(); return; }
+    document.getElementById("pw-btn").addEventListener("click", attemptLogin);
+    document.getElementById("pw-input").addEventListener("keydown", (e) => { if (e.key === "Enter") attemptLogin(); });
+  }
+  async function attemptLogin() {
+    const hash = await sha256(document.getElementById("pw-input").value);
+    if (hash === PASSWORD_HASH) {
+      localStorage.setItem("dh_auth", hash);
+      unlock();
+    } else {
+      document.getElementById("pw-error").textContent = "Wrong password — try again.";
+      document.getElementById("pw-input").value = "";
+      document.getElementById("pw-input").focus();
+    }
+  }
+  function unlock() {
+    const gate = document.getElementById("auth-gate");
+    if (gate) gate.remove();
+    if (typeof window.initApp === "function") window.initApp();
+  }
+  checkAuth();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyArnMD-8q0InlTrHxRmvvKE5fx9dAn4PPQ",
+    authDomain: "daggerheart-1db7f.firebaseapp.com",
+    projectId: "daggerheart-1db7f",
+    storageBucket: "daggerheart-1db7f.firebasestorage.app",
+    messagingSenderId: "880963026113",
+    appId: "1:880963026113:web:84697ee6ee18a2950fe840"
+  };
+
+  const SEED_CHARACTERS = [
+    {
+      docId: "tostadinator",
+      portrait: "/daggerheart/assets/tostadinator.jpg",
+      name: "Tostadinator",
+      ancestry: "Fungril • Underborne",
+      charClass: "Sorcerer (Primal Origin)",
+      traits: [
+        { name: "Agility",   val: "0"  },
+        { name: "Strength",  val: "-1" },
+        { name: "Finesse",   val: "0"  },
+        { name: "Instinct",  val: "+2" },
+        { name: "Presence",  val: "+1" },
+        { name: "Knowledge", val: "+1" },
+      ],
+      evasion: 10, proficiency: 1,
+      features: [
+        { name: "Fungril Network",  desc: "Instinct Roll (12) to communicate telepathically with other Fungril across any distance." },
+        { name: "Death Connection", desc: "Touching a recent corpse, mark a Stress to extract one memory tied to an emotion or sensation." },
+        { name: "Low-Light Living", desc: "Advantage on rolls to hide, investigate, or perceive in low light or heavy shadow." },
+      ],
+      domains: ["Arcana", "Midnight"],
+    },
+    { docId: "lola",  name: "Lola",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "maya",  name: "Maya",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "drew",  name: "Drew",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "oli",   name: "Oli",   ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "cal",   name: "Cal",   ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "caleb", name: "Caleb", ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+    { docId: "paul",  name: "Paul",  ancestry: "—", charClass: "—", traits: [], evasion: 10, proficiency: 1, features: [], domains: [] },
+  ];
+
+  const DEFAULT_ROSTER = [
+    { docId: "tostadinator", name: "Tostadinator", className: "Sorcerer (Primal)" },
+    { docId: "lola",         name: "Lola",         className: "" },
+    { docId: "maya",         name: "Maya",         className: "" },
+    { docId: "drew",         name: "Drew",         className: "" },
+    { docId: "oli",          name: "Oli",          className: "" },
+    { docId: "cal",          name: "Cal",          className: "" },
+    { docId: "caleb",        name: "Caleb",        className: "" },
+    { docId: "paul",         name: "Paul",         className: "" },
+  ];
+
+  const MAX_PIPS = 6;
+  const DEFAULT_CHAR = {
+    hp: 0, stress: 0, hope: 2,
+    name: "", ancestry: "—", charClass: "—", portrait: "",
+    evasion: 10, proficiency: 1, traits: [], features: [], domains: []
+  };
+
+  let db, spotlightRef, rosterRef, advRef, mapRef;
+  let players = [], spotlightId = null;
+  let charStates = {}, charUnsubs = {};
+  let adversaries = [];
+  let started = false;
+
+  window.initApp = async function() {
+    if (started) return; started = true;
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    spotlightRef = doc(db, "party", "spotlight");
+    rosterRef    = doc(db, "party", "roster");
+    advRef       = doc(db, "adversaries", "list");
+    mapRef       = doc(db, "battlemap", "current");
+
+    const statusEl = document.getElementById("sync-status");
+
+    // ── Roster ──────────────────────────────────────────────────────────
+    const rSnap = await getDoc(rosterRef).catch(() => null);
+    if (!rSnap || !rSnap.exists()) {
+      await setDoc(rosterRef, { players: DEFAULT_ROSTER }).catch(() => {});
+      players = [...DEFAULT_ROSTER];
+    } else {
+      players = rSnap.data().players || [];
+    }
+    onSnapshot(rosterRef, (d) => {
+      if (d.exists()) { players = d.data().players || []; renderPlayerGrid(); }
+    });
+
+    // ── Spotlight ────────────────────────────────────────────────────────
+    const sSnap = await getDoc(spotlightRef).catch(() => null);
+    if (!sSnap || !sSnap.exists()) await setDoc(spotlightRef, { activeId: null }).catch(() => {});
+    spotlightId = sSnap && sSnap.exists() ? sSnap.data().activeId : null;
+    onSnapshot(spotlightRef, (d) => {
+      spotlightId = d.exists() ? d.data().activeId : null;
+      renderPlayerGrid();
+    });
+
+    // ── Seed static character data to Firestore if missing ───────────────
+    await Promise.all(SEED_CHARACTERS.map(async (seed) => {
+      const ref = doc(db, "characters", seed.docId);
+      const snap = await getDoc(ref).catch(() => null);
+      const { docId, ...seedData } = seed;
+      if (!snap || !snap.exists()) {
+        await setDoc(ref, { ...DEFAULT_CHAR, ...seedData }).catch(() => {});
+      } else if (!('name' in snap.data())) {
+        await updateDoc(ref, seedData).catch(() => {});
+      }
+    }));
+
+    // ── Character states ──────────────────────────────────────────────────
+    SEED_CHARACTERS.forEach(c => {
+      charStates[c.docId] = { ...DEFAULT_CHAR, name: c.name };
+      charUnsubs[c.docId] = onSnapshot(doc(db, "characters", c.docId), (d) => {
+        charStates[c.docId] = d.exists() ? { ...DEFAULT_CHAR, ...d.data() } : { ...DEFAULT_CHAR, name: c.name };
+        updateCardPips(c.docId);
+      });
+    });
+
+    renderPlayerGrid();
+    statusEl.textContent = "Synced ✓";
+
+    // ── Adversaries ──────────────────────────────────────────────────────
+    const aSnap = await getDoc(advRef).catch(() => null);
+    if (!aSnap || !aSnap.exists()) await setDoc(advRef, { items: [] }).catch(() => {});
+    adversaries = aSnap && aSnap.exists() ? aSnap.data().items || [] : [];
+    renderAdversaries();
+    onSnapshot(advRef, (d) => {
+      adversaries = d.exists() ? d.data().items || [] : [];
+      renderAdversaries();
+    });
+
+    // ── Add player ───────────────────────────────────────────────────────
+    document.getElementById("add-player-btn").onclick = addPlayer;
+    document.getElementById("new-player-name").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") addPlayer();
+    });
+
+    // ── Adversary form toggle ─────────────────────────────────────────────
+    document.getElementById("adv-form-toggle").onclick = () => {
+      document.getElementById("adv-form").classList.toggle("open");
+    };
+    document.getElementById("create-adv-btn").onclick = createAdversary;
+    document.getElementById("adv-add-feat").onclick   = () => addAdvFeatureRow("", "Passive", "");
+
+    // ── Sheet drawer ──────────────────────────────────────────────────────
+    document.getElementById("drawer-close").onclick    = closeDrawer;
+    document.getElementById("drawer-overlay").onclick  = closeDrawer;
+    document.getElementById("edit-add-feature").onclick = () => addFeatureRow("", "");
+    document.getElementById("edit-save-btn").onclick    = saveEditForm;
+    document.getElementById("edit-cancel-btn").onclick  = closeEditForm;
+    document.getElementById("edit-portrait").addEventListener("blur", updatePortraitPreview);
+  };
+
+  // ── Player grid ───────────────────────────────────────────────────────────
+
+  function renderPlayerGrid() {
+    const grid = document.getElementById("player-grid");
+    grid.innerHTML = "";
+    players.forEach(p => {
+      const char = charStates[p.docId] || { ...DEFAULT_CHAR, name: p.name };
+      const isSpotlight = p.docId === spotlightId;
+
+      const card = document.createElement("div");
+      card.className = "player-card" + (isSpotlight ? " spotlight" : "");
+      card.id = "player-card-" + p.docId;
+
+      const portraitHtml = char.portrait
+        ? `<img class="portrait-thumb" src="${char.portrait}" alt="${p.name}">`
+        : `<div class="portrait-placeholder">⚔</div>`;
+
+      const traitHtml = char.traits?.length
+        ? `<div class="trait-grid">${char.traits.map(t =>
+            `<div class="trait-cell">
+              <div class="trait-label">${t.name.slice(0,3)}</div>
+              <div class="trait-value">${t.val}</div>
+            </div>`).join("")}</div>
+           <div class="stats-line">Evasion: <span>${char.evasion}</span> &nbsp;|&nbsp; Prof: <span>${char.proficiency}</span></div>`
+        : `<div style="font-size:11px;color:#4a3a5c;margin-bottom:8px;font-style:italic;">Sheet pending</div>`;
+
+      card.innerHTML = `
+        <div class="card-header">
+          ${portraitHtml}
+          <div>
+            <div class="card-name">${p.name}</div>
+            <div class="card-subtitle">${char.ancestry || "—"} • ${char.charClass || "—"}</div>
+          </div>
+        </div>
+        ${traitHtml}
+        <div class="resource-row">
+          <div class="resource-label">HP</div>
+          <div class="pips" id="pips-hp-${p.docId}"></div>
+        </div>
+        <div class="resource-row">
+          <div class="resource-label">Stress</div>
+          <div class="pips" id="pips-stress-${p.docId}"></div>
+        </div>
+        <div class="resource-row">
+          <div class="resource-label">Hope</div>
+          <div class="pips" id="pips-hope-${p.docId}"></div>
+        </div>
+        <div class="card-actions">
+          <button class="spotlight-btn${isSpotlight ? " active" : ""}" data-spotlight="${p.docId}">
+            ${isSpotlight ? "In Spotlight" : "Give Spotlight"}
+          </button>
+          <button class="sheet-btn" data-sheet="${p.docId}">Full Sheet →</button>
+          <button class="remove-btn" data-remove="${p.docId}">× Remove</button>
+        </div>`;
+
+      card.querySelector("[data-spotlight]").onclick = async () => {
+        try { await setDoc(spotlightRef, { activeId: p.docId }); } catch {}
+      };
+      card.querySelector("[data-sheet]").onclick = () => openDrawer(p.docId);
+      card.querySelector("[data-remove]").onclick = async () => {
+        players = players.filter(x => x.docId !== p.docId);
+        try { await updateDoc(rosterRef, { players }); } catch {}
+      };
+
+      grid.appendChild(card);
+      buildPips(p.docId, "hp",     char.hp     || 0, "");
+      buildPips(p.docId, "stress", char.stress || 0, "stress");
+      buildPips(p.docId, "hope",   char.hope   || 0, "hope");
+    });
+  }
+
+  function buildPips(docId, key, value, colorClass) {
+    const container = document.getElementById(`pips-${key}-${docId}`);
+    if (!container) return;
+    container.innerHTML = "";
+    for (let i = 0; i < MAX_PIPS; i++) {
+      const pip = document.createElement("div");
+      pip.className = "pip" + (colorClass ? " " + colorClass : "") + (i < value ? " filled" : "");
+      pip.onclick = () => togglePip(docId, key, i, colorClass);
+      container.appendChild(pip);
+    }
+  }
+
+  function updateCardPips(docId) {
+    const state = charStates[docId] || { ...DEFAULT_CHAR };
+    buildPips(docId, "hp",     state.hp     || 0, "");
+    buildPips(docId, "stress", state.stress || 0, "stress");
+    buildPips(docId, "hope",   state.hope   || 0, "hope");
+  }
+
+  async function togglePip(docId, key, index, colorClass) {
+    const state = charStates[docId] || { ...DEFAULT_CHAR };
+    const newVal = state[key] === index + 1 ? index : index + 1;
+    charStates[docId] = { ...state, [key]: newVal };
+    buildPips(docId, key, newVal, colorClass);
+    try { await updateDoc(doc(db, "characters", docId), { [key]: newVal }); } catch {}
+  }
+
+  async function addPlayer() {
+    const nameInput  = document.getElementById("new-player-name");
+    const classInput = document.getElementById("new-player-class");
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    const docId = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    if (players.some(p => p.docId === docId)) {
+      nameInput.value = "";
+      nameInput.placeholder = "Name already exists";
+      setTimeout(() => { nameInput.placeholder = "Player name"; }, 2000);
+      return;
+    }
+    players = [...players, { docId, name, className: classInput.value.trim() }];
+    nameInput.value = ""; classInput.value = "";
+    try { await updateDoc(rosterRef, { players }); } catch {}
+  }
+
+  // ── Sheet drawer ──────────────────────────────────────────────────────────
+
+  function openDrawer(docId) {
+    const char = charStates[docId] || { ...DEFAULT_CHAR };
+    document.getElementById("drawer-char-name").textContent = char.name || docId;
+    document.getElementById("drawer-char-subtitle").textContent = `${char.ancestry || "—"} • ${char.charClass || "—"}`;
+    const frame = document.getElementById("drawer-portrait");
+    const img   = document.getElementById("drawer-portrait-img");
+    if (char.portrait) { img.src = char.portrait; frame.style.display = "flex"; }
+    else frame.style.display = "none";
+    document.getElementById("drawer-features").innerHTML = (char.features || []).length
+      ? char.features.map(f => `<div class="feature"><b>${f.name}:</b> ${f.desc}</div>`).join("")
+      : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No features listed yet.</div>`;
+    document.getElementById("drawer-domains").innerHTML = (char.domains || []).length
+      ? char.domains.map(d => `<span class="badge">${d}</span>`).join("")
+      : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No domains listed yet.</div>`;
+    document.getElementById("drawer-edit-btn").onclick = () => openEditForm(docId);
+    document.getElementById("sheet-drawer").classList.add("open");
+    document.getElementById("drawer-overlay").classList.add("visible");
+  }
+
+  function closeDrawer() {
+    document.getElementById("sheet-drawer").classList.remove("open");
+    document.getElementById("drawer-overlay").classList.remove("visible");
+    document.getElementById("sheet-drawer").classList.remove("editing");
+  }
+
+  // ── Character edit form ───────────────────────────────────────────────────
+
+  const TRAIT_NAMES = ["Agility","Strength","Finesse","Instinct","Presence","Knowledge"];
+  let editingDocId = null;
+
+  function openEditForm(docId) {
+    editingDocId = docId;
+    const char = charStates[docId] || { ...DEFAULT_CHAR };
+    document.getElementById("edit-portrait").value  = char.portrait || "";
+    document.getElementById("edit-name").value      = char.name || "";
+    document.getElementById("edit-ancestry").value  = (char.ancestry  === "—" ? "" : char.ancestry)  || "";
+    document.getElementById("edit-class").value     = (char.charClass === "—" ? "" : char.charClass) || "";
+    document.getElementById("edit-evasion").value   = char.evasion     ?? 10;
+    document.getElementById("edit-prof").value      = char.proficiency ?? 1;
+    updatePortraitPreview();
+    const traitsEl = document.getElementById("edit-traits");
+    traitsEl.innerHTML = "";
+    TRAIT_NAMES.forEach(k => {
+      const existing = (char.traits || []).find(t => t.name === k);
+      const div = document.createElement("div");
+      div.className = "adv-form-field";
+      div.innerHTML = `<label>${k.slice(0,3).toUpperCase()}</label><input data-trait="${k}" type="text" value="${escHtml(existing ? existing.val : "0")}" style="width:48px;">`;
+      traitsEl.appendChild(div);
+    });
+    renderEditFeatures(char.features || []);
+    document.getElementById("edit-domains").value = (char.domains || []).join(", ");
+    document.getElementById("sheet-drawer").classList.add("editing");
+  }
+
+  function renderEditFeatures(features) {
+    document.getElementById("edit-features-list").innerHTML = "";
+    (features || []).forEach(f => addFeatureRow(f.name || "", f.desc || ""));
+  }
+
+  function addFeatureRow(name, desc) {
+    const list = document.getElementById("edit-features-list");
+    const row  = document.createElement("div");
+    row.className = "edit-feature-row";
+    row.innerHTML = `
+      <input class="edit-feat-name" type="text" placeholder="Feature name" value="${escHtml(name)}">
+      <input class="edit-feat-desc" type="text" placeholder="Description" value="${escHtml(desc)}">
+      <button class="delete-btn" style="padding:4px 8px;font-size:11px;flex-shrink:0;">×</button>`;
+    row.querySelector(".delete-btn").onclick = () => row.remove();
+    list.appendChild(row);
+  }
+
+  function updatePortraitPreview() {
+    const src     = document.getElementById("edit-portrait").value.trim();
+    const preview = document.getElementById("drawer-portrait-preview");
+    if (src) {
+      preview.src = src;
+      preview.style.display = "block";
+      preview.onerror = () => { preview.style.opacity = "0.3"; };
+      preview.onload  = () => { preview.style.opacity = "1"; };
+    } else {
+      preview.style.display = "none";
+    }
+  }
+
+  function closeEditForm() {
+    const docId = editingDocId;
+    editingDocId = null;
+    document.getElementById("sheet-drawer").classList.remove("editing");
+    if (docId) openDrawer(docId);
+  }
+
+  async function saveEditForm() {
+    if (!editingDocId) return;
+    const docId = editingDocId;
+    const portrait    = document.getElementById("edit-portrait").value.trim();
+    const name        = document.getElementById("edit-name").value.trim();
+    const ancestry    = document.getElementById("edit-ancestry").value.trim() || "—";
+    const charClass   = document.getElementById("edit-class").value.trim()    || "—";
+    const evasion     = parseInt(document.getElementById("edit-evasion").value) || 10;
+    const proficiency = parseInt(document.getElementById("edit-prof").value)    || 1;
+    const traits = Array.from(document.querySelectorAll("#edit-traits [data-trait]")).map(inp => ({
+      name: inp.dataset.trait, val: inp.value.trim() || "0"
+    }));
+    const features = Array.from(document.querySelectorAll("#edit-features-list .edit-feature-row")).map(row => ({
+      name: row.querySelector(".edit-feat-name").value.trim(),
+      desc: row.querySelector(".edit-feat-desc").value.trim()
+    })).filter(f => f.name);
+    const domains = document.getElementById("edit-domains").value
+      .split(",").map(d => d.trim()).filter(Boolean);
+    const updated = { portrait, name, ancestry, charClass, evasion, proficiency, traits, features, domains };
+    charStates[docId] = { ...charStates[docId], ...updated };
+    closeEditForm();
+    try { await updateDoc(doc(db, "characters", docId), updated); } catch {}
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  // ── Adversaries ───────────────────────────────────────────────────────────
+
+  function renderAdversaries() {
+    const grid = document.getElementById("adversary-grid");
+    grid.innerHTML = "";
+    adversaries.forEach(adv => {
+      const card = document.createElement("div");
+      card.className = "adversary-card";
+      const difficulty = adv.difficulty ?? adv.evasion ?? 12;
+      const atkParts = [
+        adv.atkBonus !== undefined ? `Atk ${adv.atkBonus >= 0 ? "+" : ""}${adv.atkBonus}` : null,
+        adv.attackName  || null,
+        adv.attackRange || null,
+        adv.attackDamage || null
+      ].filter(Boolean);
+
+      const featuresHtml = (adv.features || []).length
+        ? `<details class="adv-features">
+            <summary>Features (${adv.features.length})</summary>
+            ${adv.features.map(f =>
+              `<div class="adv-feature-item"><b>${escHtml(f.name)}${f.type ? ` — ${f.type}` : ""}:</b> ${escHtml(f.desc || "")}</div>`
+            ).join("")}
+          </details>` : "";
+
+      card.innerHTML = `
+        <div class="adversary-name-row">
+          <div class="adversary-name">${escHtml(adv.name)}</div>
+          <button class="delete-btn" style="font-size:11px;padding:3px 8px;">× Del</button>
+        </div>
+        ${adv.tier || adv.role ? `<div class="adv-subtitle">Tier ${adv.tier || "?"} ${escHtml(adv.role || "")}</div>` : ""}
+        ${adv.description ? `<div class="adv-description">${escHtml(adv.description)}</div>` : ""}
+        <div class="adv-stat-grid">
+          <div class="adv-stat-cell"><div class="adv-stat-label">DC</div><div class="adv-stat-val">${difficulty}</div></div>
+          <div class="adv-stat-cell"><div class="adv-stat-label">Minor</div><div class="adv-stat-val">${adv.thresholdMinor ?? "—"}</div></div>
+          <div class="adv-stat-cell"><div class="adv-stat-label">Major</div><div class="adv-stat-val">${adv.thresholdMajor ?? "—"}</div></div>
+          <div class="adv-stat-cell"><div class="adv-stat-label">HP</div><div class="adv-stat-val">${adv.maxHp}</div></div>
+          <div class="adv-stat-cell"><div class="adv-stat-label">Stress</div><div class="adv-stat-val">${adv.maxStress ?? "—"}</div></div>
+        </div>
+        ${atkParts.length ? `<div class="adv-attack-line">${escHtml(atkParts.join(" | "))}</div>` : ""}
+        ${adv.experience ? `<div class="adv-stats-line"><span>Exp:</span> ${escHtml(adv.experience)}</div>` : ""}
+        <div class="resource-row" style="margin-top:6px;">
+          <div class="resource-label" style="color:#c98a8a;">HP</div>
+          <div class="pips" id="adv-hp-${adv.id}"></div>
+        </div>
+        ${(adv.maxStress ?? 0) > 0 ? `<div class="resource-row">
+          <div class="resource-label" style="color:#c98a4a;">Stress</div>
+          <div class="pips" id="adv-stress-${adv.id}"></div>
+        </div>` : ""}
+        ${adv.motives ? `<div class="adv-stats-line" style="margin-top:4px;"><span>Motives:</span> ${escHtml(adv.motives)}</div>` : ""}
+        ${featuresHtml}
+        <div class="adversary-actions">
+          <button class="add-map-btn">Add to Map Again</button>
+        </div>`;
+
+      card.querySelector(".delete-btn").onclick = async () => {
+        adversaries = adversaries.filter(a => a.id !== adv.id);
+        try { await updateDoc(advRef, { items: adversaries }); } catch {}
+        try { await updateDoc(mapRef, { [`tokens.enemy-${adv.id}`]: deleteField() }); } catch {}
+      };
+      card.querySelector(".add-map-btn").onclick = () => addToMap(adv);
+
+      grid.appendChild(card);
+      buildAdvPips(adv, "hp",     adv.maxHp,         adv.currentHp     ?? adv.maxHp, "hp-adv");
+      buildAdvPips(adv, "stress", adv.maxStress ?? 0, adv.currentStress ?? 0,          "stress-adv");
+    });
+  }
+
+  function buildAdvPips(adv, key, max, current, colorClass) {
+    const id = key === "hp" ? `adv-hp-${adv.id}` : `adv-stress-${adv.id}`;
+    const container = document.getElementById(id);
+    if (!container || max <= 0) return;
+    container.innerHTML = "";
+    const stateKey = key === "hp" ? "currentHp" : "currentStress";
+    for (let i = 0; i < max; i++) {
+      const pip = document.createElement("div");
+      pip.className = "pip " + colorClass + (i < current ? " filled" : "");
+      pip.onclick = async () => {
+        const newVal = adv[stateKey] === i + 1 ? i : i + 1;
+        adv[stateKey] = newVal;
+        buildAdvPips(adv, key, max, newVal, colorClass);
+        const updated = adversaries.map(a => a.id === adv.id ? { ...a, [stateKey]: newVal } : a);
+        adversaries = updated;
+        try { await updateDoc(advRef, { items: updated }); } catch {}
+      };
+      container.appendChild(pip);
+    }
+  }
+
+  async function createAdversary() {
+    const name = document.getElementById("adv-name").value.trim();
+    if (!name) { document.getElementById("adv-name").focus(); return; }
+
+    const tier        = parseInt(document.getElementById("adv-tier").value)       || 1;
+    const role        = document.getElementById("adv-role").value.trim();
+    const description = document.getElementById("adv-desc").value.trim();
+    const motives     = document.getElementById("adv-motives").value.trim();
+    const difficulty  = parseInt(document.getElementById("adv-difficulty").value) || 12;
+    const thresholdMinor = parseInt(document.getElementById("adv-minor").value)   || 6;
+    const thresholdMajor = parseInt(document.getElementById("adv-major").value)   || 12;
+    const maxHp       = parseInt(document.getElementById("adv-maxhp").value)      || 4;
+    const maxStress   = parseInt(document.getElementById("adv-maxstress").value)  || 0;
+    const atkBonus    = parseInt(document.getElementById("adv-atkbonus").value)   || 0;
+    const attackName  = document.getElementById("adv-atkname").value.trim();
+    const attackRange = document.getElementById("adv-atkrange").value;
+    const attackDamage = document.getElementById("adv-atkdmg").value.trim();
+    const experience  = document.getElementById("adv-exp").value.trim();
+    const features    = Array.from(document.querySelectorAll("#adv-features-list .adv-feat-row")).map(row => ({
+      name: row.querySelector(".adv-feat-name").value.trim(),
+      type: row.querySelector(".adv-feat-type").value,
+      desc: row.querySelector(".adv-feat-desc").value.trim()
+    })).filter(f => f.name);
+
+    const qty = Math.max(1, Math.min(10, parseInt(document.getElementById("adv-qty").value) || 1));
+
+    const newEntries = [];
+    for (let i = 0; i < qty; i++) {
+      newEntries.push({
+        id: "adv-" + Date.now() + "-" + i,
+        name: qty > 1 ? `${name} ${i + 1}` : name,
+        tier, role, description, motives,
+        difficulty, thresholdMinor, thresholdMajor,
+        maxHp, currentHp: maxHp,
+        maxStress, currentStress: 0,
+        atkBonus, attackName, attackRange, attackDamage,
+        experience, features
+      });
+    }
+
+    adversaries = [...adversaries, ...newEntries];
+    try { await updateDoc(advRef, { items: adversaries }); } catch {}
+
+    for (let i = 0; i < newEntries.length; i++) {
+      await addToMap(newEntries[i], i);
+    }
+
+    // Reset form
+    ["adv-name","adv-role","adv-desc","adv-motives","adv-atkname","adv-atkdmg","adv-exp"].forEach(id => {
+      document.getElementById(id).value = "";
+    });
+    document.getElementById("adv-tier").value       = "1";
+    document.getElementById("adv-difficulty").value = "12";
+    document.getElementById("adv-minor").value      = "6";
+    document.getElementById("adv-major").value      = "12";
+    document.getElementById("adv-maxhp").value      = "4";
+    document.getElementById("adv-maxstress").value  = "2";
+    document.getElementById("adv-atkbonus").value   = "0";
+    document.getElementById("adv-atkrange").value   = "Melee";
+    document.getElementById("adv-qty").value        = "1";
+    document.getElementById("adv-features-list").innerHTML = "";
+    document.getElementById("adv-form").classList.remove("open");
+  }
+
+  function addAdvFeatureRow(name, type, desc) {
+    const list = document.getElementById("adv-features-list");
+    const row  = document.createElement("div");
+    row.className = "adv-feat-row";
+    row.innerHTML = `
+      <input class="adv-feat-name" type="text" placeholder="Feature name" value="${escHtml(name)}">
+      <select class="adv-feat-type">
+        <option${type==="Passive"?" selected":""}>Passive</option>
+        <option${type==="Action"?" selected":""}>Action</option>
+        <option${type==="Reaction"?" selected":""}>Reaction</option>
+        <option${type==="Countermeasure"?" selected":""}>Countermeasure</option>
+      </select>
+      <input class="adv-feat-desc" type="text" placeholder="Description" value="${escHtml(desc)}">
+      <button class="delete-btn" style="padding:4px 8px;font-size:11px;flex-shrink:0;">×</button>`;
+    row.querySelector(".delete-btn").onclick = () => row.remove();
+    list.appendChild(row);
+  }
+
+  async function addToMap(adv, index = 0) {
+    const label   = adv.name.slice(0, 3).toUpperCase();
+    const tokenId = "enemy-" + adv.id;
+    const token   = { x: 80 + index * 50, y: 80, label, name: adv.name, type: "enemy" };
+    try {
+      // Try to add to existing doc
+      await updateDoc(mapRef, { [`tokens.${tokenId}`]: token });
+    } catch (e) {
+      // Doc doesn't exist yet — create it, then add token
+      try {
+        await setDoc(mapRef, { bgUrl: "", tokens: {} });
+        await updateDoc(mapRef, { [`tokens.${tokenId}`]: token });
+      } catch {}
+    }
+  }
+
+  if (!document.getElementById("auth-gate")) window.initApp();
+</script>
+</body>
+</html>

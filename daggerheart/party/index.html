@@ -1,0 +1,271 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Party Dashboard — Daggerheart</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Georgia', serif;
+    background: radial-gradient(circle at top, #1b1330, #0a0712);
+    color: #e8e2f5;
+    padding: 20px;
+  }
+  .dashboard { max-width: 900px; margin: 0 auto; }
+  .back-link { display: inline-block; color: #9b8bbf; font-size: 13px; text-decoration: none; margin-bottom: 16px; }
+  .back-link:hover { color: #c9a8ff; }
+  h1 { text-align: center; color: #c9a8ff; margin: 0 0 4px; font-size: 30px; }
+  .subtitle { text-align: center; color: #9b8bbf; font-size: 14px; margin-bottom: 20px; }
+  .sync-status { text-align: center; font-size: 12px; color: #7fdca0; margin-bottom: 16px; min-height: 16px; }
+  .sync-status.error { color: #ff8a8a; }
+
+  .pool-card {
+    background: #1a1428; border: 2px solid #963e3e; border-radius: 16px;
+    padding: 18px; text-align: center;
+    box-shadow: 0 0 20px rgba(220,80,80,0.25); margin-bottom: 24px;
+  }
+  .pool-title { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #e3a0a0; margin-bottom: 10px; }
+  .pool-pips { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+  .pool-pip {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 2px solid #963e3e; cursor: pointer; background: transparent; transition: all 0.15s;
+  }
+  .pool-pip.filled { background: #e3a0a0; box-shadow: 0 0 8px #e3a0a0; }
+
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .player-card { background: #1a1428; border: 2px solid #3a2a5c; border-radius: 14px; padding: 14px; }
+  .player-card.placeholder { border-style: dashed; opacity: 0.4; }
+  .player-name { font-size: 17px; color: #c9a8ff; margin-bottom: 2px; }
+  .player-class { font-size: 12px; color: #9b8bbf; margin-bottom: 10px; }
+  .player-resource-label { font-size: 12px; color: #d8cdf0; margin-bottom: 4px; }
+  .player-pips { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+  .player-pip { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #5b3e96; background: transparent; }
+  .player-pip.filled { background: #c9a8ff; box-shadow: 0 0 6px #c9a8ff; }
+  .player-pip.stress-pip { border-color: #c98a4a; }
+  .player-pip.stress-pip.filled { background: #e3b06a; box-shadow: 0 0 6px #e3b06a; }
+  .player-pip.hope-pip { border-color: #4ac98a; }
+  .player-pip.hope-pip.filled { background: #7fdca0; box-shadow: 0 0 6px #7fdca0; }
+
+  /* Password gate */
+  #auth-gate {
+    position: fixed; inset: 0; z-index: 9999;
+    background: radial-gradient(circle at top, #1b1330, #0a0712);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gate-box { text-align: center; max-width: 320px; width: 100%; padding: 32px; }
+  .gate-title { font-size: 32px; color: #c9a8ff; margin-bottom: 4px; }
+  .gate-sub { font-size: 14px; color: #9b8bbf; margin-bottom: 28px; }
+  .gate-input {
+    width: 100%; box-sizing: border-box; padding: 12px 16px;
+    border-radius: 10px; border: 2px solid #5b3e96;
+    background: #1a1428; color: #e8e2f5; font-size: 16px;
+    outline: none; margin-bottom: 12px;
+  }
+  .gate-input:focus { border-color: #c9a8ff; }
+  .gate-btn {
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #5b3e96, #8a5fc9);
+    color: white; font-size: 15px; font-weight: bold; cursor: pointer;
+  }
+  .gate-error { color: #ff8a8a; font-size: 13px; margin-top: 10px; min-height: 18px; }
+</style>
+</head>
+<body>
+
+<div id="auth-gate">
+  <div class="gate-box">
+    <div class="gate-title">⚔️ Daggerheart</div>
+    <div class="gate-sub">Party Dashboard</div>
+    <input class="gate-input" id="pw-input" type="password" placeholder="Team password" autocomplete="current-password">
+    <button class="gate-btn" id="pw-btn">Enter</button>
+    <div class="gate-error" id="pw-error"></div>
+  </div>
+</div>
+
+<div class="dashboard">
+  <a href="../" class="back-link">← Back to Home</a>
+  <h1>The Party</h1>
+  <div class="subtitle">Live status — visible to everyone at the table</div>
+  <div class="sync-status" id="sync-status">Connecting...</div>
+
+  <div class="pool-card">
+    <div class="pool-title">GM Fear (max 12)</div>
+    <div class="pool-pips" id="fear-pool-pips"></div>
+  </div>
+
+  <div class="players-grid" id="players-grid"></div>
+</div>
+
+<script>
+  const PASSWORD_HASH = "5bfa0151f57207a3c1688bebe2568444a943842d5e7c42b7d4d0742b6f12baa1";
+
+  async function sha256(msg) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+
+  async function checkAuth() {
+    const stored = localStorage.getItem("dh_auth");
+    if (stored === PASSWORD_HASH) { unlock(); return; }
+    document.getElementById("pw-btn").addEventListener("click", attemptLogin);
+    document.getElementById("pw-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") attemptLogin();
+    });
+  }
+
+  async function attemptLogin() {
+    const val = document.getElementById("pw-input").value;
+    const hash = await sha256(val);
+    if (hash === PASSWORD_HASH) {
+      localStorage.setItem("dh_auth", hash);
+      unlock();
+    } else {
+      document.getElementById("pw-error").textContent = "Wrong password — try again.";
+      document.getElementById("pw-input").value = "";
+      document.getElementById("pw-input").focus();
+    }
+  }
+
+  function unlock() {
+    const gate = document.getElementById("auth-gate");
+    if (gate) gate.remove();
+    if (typeof window.initApp === "function") window.initApp();
+    // else: module auto-starts below
+  }
+
+  checkAuth();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyArnMD-8q0InlTrHxRmvvKE5fx9dAn4PPQ",
+    authDomain: "daggerheart-1db7f.firebaseapp.com",
+    projectId: "daggerheart-1db7f",
+    storageBucket: "daggerheart-1db7f.firebasestorage.app",
+    messagingSenderId: "880963026113",
+    appId: "1:880963026113:web:84697ee6ee18a2950fe840"
+  };
+
+  // ── Add players here as characters are created ───────────────────────────────
+  const PLAYERS = [
+    { docId: "tostadinator", name: "Tostadinator", className: "Sorcerer (Primal)" },
+    { docId: "lola",         name: "Lola",         className: "—" },
+    { docId: "maya",         name: "Maya",         className: "—" },
+    { docId: "drew",         name: "Drew",         className: "—" },
+    { docId: "oli",          name: "Oli",          className: "—" },
+    { docId: "cal",          name: "Cal",          className: "—" },
+    { docId: "caleb",        name: "Caleb",        className: "—" },
+    { docId: "paul",         name: "Paul",         className: "—" },
+  ];
+  const PLACEHOLDER_COUNT = 0;
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const MAX_POOL = 12;
+  const MAX_PLAYER_PIPS = 6;
+
+  let db, poolsRef, poolState = { fear: 1 }, started = false;
+
+  window.initApp = async function() {
+    if (started) return; started = true;
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    poolsRef = doc(db, "party", "pools");
+
+    try {
+      await initPools();
+      initPlayers();
+      document.getElementById("sync-status").textContent = "Synced ✓";
+    } catch(e) {
+      document.getElementById("sync-status").textContent = e.message || "Offline — check connection";
+      document.getElementById("sync-status").classList.add("error");
+    }
+  };
+
+  function renderFearPips() {
+    const container = document.getElementById("fear-pool-pips");
+    container.innerHTML = "";
+    for (let i = 0; i < MAX_POOL; i++) {
+      const pip = document.createElement("div");
+      pip.className = "pool-pip" + (i < poolState.fear ? " filled" : "");
+      pip.onclick = async () => {
+        const newVal = poolState.fear === i + 1 ? i : i + 1;
+        poolState.fear = newVal;
+        renderFearPips();
+        try { await updateDoc(poolsRef, { fear: newVal }); }
+        catch { /* silent — UI already updated */ }
+      };
+      container.appendChild(pip);
+    }
+  }
+
+  async function initPools() {
+    const snap = await getDoc(poolsRef);
+    if (!snap.exists()) await setDoc(poolsRef, poolState);
+    else poolState = { ...poolState, ...snap.data() };
+    renderFearPips();
+    onSnapshot(poolsRef, (d) => {
+      if (d.exists()) { poolState = { ...poolState, ...d.data() }; renderFearPips(); }
+    });
+  }
+
+  function renderPlayerCard(player, state) {
+    const grid = document.getElementById("players-grid");
+    let card = document.getElementById("card-" + player.docId);
+    if (!card) {
+      card = document.createElement("div");
+      card.className = "player-card";
+      card.id = "card-" + player.docId;
+      card.innerHTML = `
+        <div class="player-name">${player.name}</div>
+        <div class="player-class">${player.className}</div>
+        <div class="player-resource-label">HP (marked)</div>
+        <div class="player-pips" id="hp-${player.docId}"></div>
+        <div class="player-resource-label">Stress (marked)</div>
+        <div class="player-pips" id="stress-${player.docId}"></div>
+        <div class="player-resource-label">Hope</div>
+        <div class="player-pips" id="hope-${player.docId}"></div>`;
+      grid.appendChild(card);
+    }
+    function fillPips(id, value, extraClass) {
+      const c = document.getElementById(id);
+      c.innerHTML = "";
+      for (let i = 0; i < MAX_PLAYER_PIPS; i++) {
+        const p = document.createElement("div");
+        p.className = "player-pip" + (extraClass ? " " + extraClass : "") + (i < (value || 0) ? " filled" : "");
+        c.appendChild(p);
+      }
+    }
+    fillPips("hp-" + player.docId, state.hp, "");
+    fillPips("stress-" + player.docId, state.stress, "stress-pip");
+    fillPips("hope-" + player.docId, state.hope, "hope-pip");
+  }
+
+  function initPlayers() {
+    const grid = document.getElementById("players-grid");
+    PLAYERS.forEach(p => {
+      const ref = doc(db, "characters", p.docId);
+      onSnapshot(ref, (d) => renderPlayerCard(p, d.exists() ? d.data() : {}));
+    });
+    for (let i = 0; i < PLACEHOLDER_COUNT; i++) {
+      const card = document.createElement("div");
+      card.className = "player-card placeholder";
+      card.innerHTML = `<div class="player-name">Open Slot</div><div class="player-class">Waiting for character</div>`;
+      grid.appendChild(card);
+    }
+  }
+
+  if (!document.getElementById("auth-gate")) window.initApp();
+</script>
+</body>
+</html>

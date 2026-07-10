@@ -1,0 +1,723 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Battle Map — Daggerheart</title>
+<style>
+  /* ── Base ─────────────────────────────────────────────────────────── */
+  body {
+    margin: 0;
+    font-family: 'Georgia', serif;
+    background: #0a0712;
+    color: #e8e2f5;
+    padding: 16px 16px 106px;
+  }
+  .back-link { display: inline-block; color: #9b8bbf; font-size: 13px; text-decoration: none; margin-bottom: 12px; }
+  .back-link:hover { color: #c9a8ff; }
+  h1 { text-align: center; color: #c9a8ff; font-size: 24px; margin: 0 0 8px; }
+  .sync-status { text-align: center; font-size: 12px; color: #7fdca0; margin-bottom: 10px; min-height: 16px; }
+  .sync-status.error { color: #ff8a8a; }
+
+  /* ── Map ──────────────────────────────────────────────────────────── */
+  .map-wrap {
+    max-width: 1400px; margin: 0 auto;
+    position: relative; border: 2px solid #5b3e96; border-radius: 12px; overflow: hidden;
+    background: #14102080;
+    background-image:
+      linear-gradient(0deg, rgba(91,62,150,0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(91,62,150,0.15) 1px, transparent 1px);
+    background-size: 40px 40px;
+    min-height: 400px;
+  }
+  .map-bg { width: 100%; display: block; pointer-events: none; }
+  .map-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  .token {
+    position: absolute; width: 32px; height: 32px; border-radius: 50%;
+    border: 2px solid #c9a8ff; background: #3a2a5c;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: bold; color: #fff;
+    cursor: grab; box-shadow: 0 0 8px rgba(170,120,255,0.5);
+    user-select: none; touch-action: none;
+  }
+  .token.enemy { border-color: #e3a0a0; background: #5c2a2a; box-shadow: 0 0 10px rgba(220,80,80,0.4); }
+  .token.in-spotlight { border-color: #ffd700; box-shadow: 0 0 18px rgba(255,215,0,0.9); }
+  .token.player-token:hover { box-shadow: 0 0 20px rgba(170,120,255,0.95); transform: scale(1.1); transition: all 0.1s; }
+  .token:active { cursor: grabbing; }
+  .token-label {
+    position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; white-space: nowrap; color: #c9a8ff;
+  }
+  .token.enemy .token-label { color: #e3a0a0; }
+  .legend { max-width: 1400px; margin: 10px auto; font-size: 12px; color: #9b8bbf; text-align: center; }
+
+  /* ── Party strip ──────────────────────────────────────────────────── */
+  #party-strip {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    height: 90px; background: #0d0a1a;
+    border-top: 2px solid #3a2a5c;
+    display: flex; align-items: stretch;
+    overflow-x: auto;
+  }
+  #fear-compact {
+    min-width: 72px; padding: 6px 10px;
+    border-right: 1px solid #3a2a5c;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    flex-shrink: 0;
+  }
+  .fear-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #e3a0a0; margin-bottom: 1px; }
+  .fear-pips-row { display: flex; gap: 3px; }
+  #player-strip-cards { display: flex; align-items: center; padding: 0 8px; gap: 6px; }
+  .strip-card {
+    min-width: 88px; padding: 6px 8px;
+    background: #1a1428; border: 1.5px solid #3a2a5c; border-radius: 10px;
+    cursor: pointer; flex-shrink: 0;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    touch-action: manipulation;
+  }
+  .strip-card:hover { border-color: #c9a8ff; box-shadow: 0 0 10px rgba(170,120,255,0.3); }
+  .strip-name { font-size: 10px; color: #c9a8ff; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .strip-pips-row { display: flex; gap: 2px; margin-bottom: 2px; }
+  .mini-pip {
+    width: 9px; height: 9px; border-radius: 50%;
+    border: 1.5px solid #5b3e96; background: transparent; flex-shrink: 0;
+    touch-action: manipulation;
+  }
+  .mini-pip.filled { background: #c9a8ff; border-color: #c9a8ff; }
+  .mini-pip.fear-pip { border-color: #963e3e; }
+  .mini-pip.fear-pip.filled { background: #e3a0a0; border-color: #963e3e; }
+  .mini-pip.stress-pip { border-color: #c98a4a; }
+  .mini-pip.stress-pip.filled { background: #e3b06a; border-color: #c98a4a; }
+  .mini-pip.hope-pip { border-color: #4ac98a; }
+  .mini-pip.hope-pip.filled { background: #7fdca0; border-color: #4ac98a; }
+
+  /* ── Sheet drawer ─────────────────────────────────────────────────── */
+  #sheet-drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 200;
+    width: min(420px, 100vw);
+    background: radial-gradient(circle at top, #1b1330, #0a0712);
+    border-left: 2px solid #5b3e96;
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    overflow-y: auto; padding: 16px 20px 24px;
+    box-sizing: border-box;
+  }
+  #sheet-drawer.open { transform: translateX(0); }
+  #drawer-overlay {
+    position: fixed; inset: 0; z-index: 199;
+    background: rgba(0,0,0,0.5); display: none;
+  }
+  #drawer-overlay.visible { display: block; }
+
+  .drawer-header {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  #drawer-close {
+    background: transparent; border: 1.5px solid #5b3e96; color: #9b8bbf;
+    border-radius: 8px; padding: 5px 10px; font-size: 13px; cursor: pointer; flex-shrink: 0;
+  }
+  #drawer-close:hover { background: #3a2a5c; color: #c9a8ff; }
+
+  .char-picker { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+  .char-btn {
+    padding: 5px 11px; border-radius: 999px; border: 2px solid #5b3e96;
+    background: transparent; color: #9b8bbf; font-size: 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .char-btn.active { background: #5b3e96; color: #e8e2f5; font-weight: bold; }
+  .char-btn:hover { border-color: #c9a8ff; color: #c9a8ff; }
+
+  #drawer-char-name { text-align: center; color: #c9a8ff; margin: 4px 0 2px; font-size: 22px; font-weight: bold; }
+  #drawer-char-subtitle { text-align: center; color: #9b8bbf; font-size: 13px; margin-bottom: 8px; }
+  .portrait-frame { display: flex; justify-content: center; margin: 8px 0 12px; }
+  .portrait-img {
+    width: 100%; max-width: 280px; border-radius: 12px;
+    border: 2px solid #5b3e96; box-shadow: 0 0 24px rgba(170,120,255,0.45); display: block;
+  }
+  #drawer-sync-status { text-align: center; font-size: 12px; color: #7fdca0; margin-bottom: 8px; min-height: 16px; }
+  #drawer-sync-status.error { color: #ff8a8a; }
+
+  .section { margin-bottom: 14px; border-top: 1px solid #3a2a5c; padding-top: 10px; }
+  .section-title { color: #c9a8ff; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .traits { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .trait { background: #241a3a; border-radius: 8px; padding: 6px; text-align: center; }
+  .trait-name { font-size: 10px; color: #9b8bbf; }
+  .trait-val { font-size: 18px; font-weight: bold; color: #ffffff; }
+  .resource-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .resource-label { font-size: 13px; color: #d8cdf0; }
+  .pips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pip {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid #5b3e96; cursor: pointer; background: transparent; transition: all 0.15s;
+  }
+  .pip.filled { background: #c9a8ff; box-shadow: 0 0 8px #c9a8ff; }
+  .feature { background: #241a3a; border-radius: 8px; padding: 8px; margin-bottom: 6px; font-size: 12px; line-height: 1.4; }
+  .feature b { color: #c9a8ff; }
+  .badge { display: inline-block; background: #3a2a5c; color: #c9a8ff; border-radius: 6px; padding: 2px 8px; font-size: 11px; margin-right: 4px; }
+
+  /* ── Fullscreen ───────────────────────────────────────────────────── */
+  #fullscreen-btn {
+    position: absolute; top: 10px; right: 10px; z-index: 50;
+    background: rgba(20,16,32,0.75); border: 1.5px solid #5b3e96;
+    color: #c9a8ff; border-radius: 8px; padding: 6px 10px;
+    font-size: 14px; cursor: pointer; backdrop-filter: blur(4px);
+    transition: background 0.15s, border-color 0.15s;
+    line-height: 1;
+  }
+  #fullscreen-btn:hover { background: rgba(91,62,150,0.5); border-color: #c9a8ff; }
+
+  /* Fullscreen mode — html element is fullscreened, body class drives layout */
+  body.is-fullscreen .back-link,
+  body.is-fullscreen h1,
+  body.is-fullscreen .sync-status,
+  body.is-fullscreen .legend { display: none; }
+
+  body.is-fullscreen .map-wrap {
+    max-width: 100%; border-radius: 0; border: none;
+    min-height: calc(100dvh - 90px);
+  }
+
+  /* ── Auth gate ────────────────────────────────────────────────────── */
+  #auth-gate {
+    position: fixed; inset: 0; z-index: 9999;
+    background: radial-gradient(circle at top, #1b1330, #0a0712);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gate-box { text-align: center; max-width: 320px; width: 100%; padding: 32px; }
+  .gate-title { font-size: 32px; color: #c9a8ff; margin-bottom: 4px; }
+  .gate-sub { font-size: 14px; color: #9b8bbf; margin-bottom: 28px; }
+  .gate-input {
+    width: 100%; box-sizing: border-box; padding: 12px 16px;
+    border-radius: 10px; border: 2px solid #5b3e96;
+    background: #1a1428; color: #e8e2f5; font-size: 16px;
+    outline: none; margin-bottom: 12px;
+  }
+  .gate-input:focus { border-color: #c9a8ff; }
+  .gate-btn {
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #5b3e96, #8a5fc9);
+    color: white; font-size: 15px; font-weight: bold; cursor: pointer;
+  }
+  .gate-error { color: #ff8a8a; font-size: 13px; margin-top: 10px; min-height: 18px; }
+</style>
+</head>
+<body>
+
+<div id="auth-gate">
+  <div class="gate-box">
+    <div class="gate-title">⚔️ Daggerheart</div>
+    <div class="gate-sub">Battle Map</div>
+    <input class="gate-input" id="pw-input" type="password" placeholder="Team password" autocomplete="current-password">
+    <button class="gate-btn" id="pw-btn">Enter</button>
+    <div class="gate-error" id="pw-error"></div>
+  </div>
+</div>
+
+<a href="../" class="back-link">← Home</a>
+<h1>Battle Map</h1>
+<div class="sync-status" id="sync-status">Connecting...</div>
+
+<div class="map-wrap" id="map-wrap">
+  <button id="fullscreen-btn" title="Toggle fullscreen">⛶</button>
+  <img id="map-bg" class="map-bg" src="" alt="" style="display:none;">
+  <div class="map-canvas" id="map-canvas"></div>
+</div>
+
+<div class="legend">Tap a player token or a card in the strip to open their character sheet.</div>
+
+<!-- Party strip -->
+<div id="party-strip">
+  <div id="fear-compact">
+    <div class="fear-label">Fear</div>
+    <div class="fear-pips-row" id="fear-row-1"></div>
+    <div class="fear-pips-row" id="fear-row-2"></div>
+  </div>
+  <div id="player-strip-cards"></div>
+</div>
+
+<!-- Sheet drawer -->
+<div id="sheet-drawer">
+  <div class="drawer-header">
+    <button id="drawer-close">✕ Close</button>
+    <div class="char-picker" id="drawer-char-picker"></div>
+  </div>
+
+  <div id="drawer-char-name">—</div>
+  <div id="drawer-char-subtitle">—</div>
+  <div class="portrait-frame" id="drawer-portrait" style="display:none;">
+    <img class="portrait-img" id="drawer-portrait-img" src="" alt="Character portrait">
+  </div>
+  <div id="drawer-sync-status">—</div>
+
+  <div class="section">
+    <div class="section-title">Traits</div>
+    <div class="traits" id="drawer-traits-grid"></div>
+    <div id="drawer-stats-line" style="margin-top:8px; text-align:center; color:#9b8bbf; font-size:12px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Resources — tap to update</div>
+    <div class="resource-row">
+      <div class="resource-label">Hit Points (marked)</div>
+      <div class="pips" id="drawer-hp-pips"></div>
+    </div>
+    <div class="resource-row">
+      <div class="resource-label">Stress (marked)</div>
+      <div class="pips" id="drawer-stress-pips"></div>
+    </div>
+    <div class="resource-row">
+      <div class="resource-label">Hope</div>
+      <div class="pips" id="drawer-hope-pips"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Ancestry & Community Features</div>
+    <div id="drawer-features-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Domains</div>
+    <div id="drawer-domains-list"></div>
+  </div>
+
+</div>
+<div id="drawer-overlay"></div>
+
+<script>
+  const PASSWORD_HASH = "5bfa0151f57207a3c1688bebe2568444a943842d5e7c42b7d4d0742b6f12baa1";
+  async function sha256(msg) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+  }
+  async function checkAuth() {
+    const stored = localStorage.getItem("dh_auth");
+    if (stored === PASSWORD_HASH) { unlock(); return; }
+    document.getElementById("pw-btn").addEventListener("click", attemptLogin);
+    document.getElementById("pw-input").addEventListener("keydown", (e) => { if (e.key === "Enter") attemptLogin(); });
+  }
+  async function attemptLogin() {
+    const val = document.getElementById("pw-input").value;
+    const hash = await sha256(val);
+    if (hash === PASSWORD_HASH) {
+      localStorage.setItem("dh_auth", hash);
+      unlock();
+    } else {
+      document.getElementById("pw-error").textContent = "Wrong password — try again.";
+      document.getElementById("pw-input").value = "";
+      document.getElementById("pw-input").focus();
+    }
+  }
+  function unlock() {
+    const gate = document.getElementById("auth-gate");
+    if (gate) gate.remove();
+    if (typeof window.initApp === "function") window.initApp();
+  }
+  checkAuth();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyArnMD-8q0InlTrHxRmvvKE5fx9dAn4PPQ",
+    authDomain: "daggerheart-1db7f.firebaseapp.com",
+    projectId: "daggerheart-1db7f",
+    storageBucket: "daggerheart-1db7f.firebasestorage.app",
+    messagingSenderId: "880963026113",
+    appId: "1:880963026113:web:84697ee6ee18a2950fe840"
+  };
+
+  const PARTY = [
+    { docId: "tostadinator", name: "Tostadinator", label: "TOS" },
+    { docId: "lola",         name: "Lola",         label: "LOL" },
+    { docId: "maya",         name: "Maya",         label: "MAY" },
+    { docId: "drew",         name: "Drew",         label: "DRW" },
+    { docId: "oli",          name: "Oli",          label: "OLI" },
+    { docId: "cal",          name: "Cal",          label: "CAL" },
+    { docId: "caleb",        name: "Caleb",        label: "CLB" },
+    { docId: "paul",         name: "Paul",         label: "PUL" },
+  ];
+
+
+
+  const DEFAULT_BG = "https://i.redd.it/g39kbyrmglpc1.jpeg";
+  const MAX_PIPS = 6;
+  const DEFAULT_CHAR_STATE = { hp: 0, stress: 0, hope: 2 };
+  const DEFAULT_CHAR = {
+    hp: 0, stress: 0, hope: 2,
+    name: "", ancestry: "—", charClass: "—", portrait: "",
+    evasion: 10, proficiency: 1, traits: [], features: [], domains: []
+  };
+
+  let db, mapRef, poolsRef, spotlightRef;
+  let mapState = { bgUrl: DEFAULT_BG, tokens: {} }, dragging = null, dragMoved = false;
+  let tokenCounter = 1, started = false;
+  let sheetUnsub = null, activeDocId = null, activeCharState = { ...DEFAULT_CHAR_STATE };
+  let fearState = { fear: 0 };
+  let spotlightDocId = null;
+  const playerStates = {};
+  const charData = {};
+
+  window.initApp = async function() {
+    if (started) return; started = true;
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    mapRef       = doc(db, "battlemap", "current");
+    poolsRef     = doc(db, "party", "pools");
+    spotlightRef = doc(db, "party", "spotlight");
+
+    bindDragEvents();
+    bindDrawerUI();
+    bindFullscreen();
+
+    onSnapshot(spotlightRef, (d) => {
+      spotlightDocId = d.exists() ? d.data().activeId : null;
+      renderTokens();
+    });
+
+    await Promise.all([initMap(), initFearStrip(), initPlayerStrip()]);
+  };
+
+  // ── MAP ──────────────────────────────────────────────────────────────────
+
+  async function initMap() {
+    const statusEl = document.getElementById("sync-status");
+    try {
+      const snap = await getDoc(mapRef);
+      if (!snap.exists()) {
+        await setDoc(mapRef, mapState);
+      } else {
+        mapState = { bgUrl: DEFAULT_BG, tokens: {}, ...snap.data() };
+        if (!mapState.bgUrl) {
+          mapState.bgUrl = DEFAULT_BG;
+          await updateDoc(mapRef, { bgUrl: DEFAULT_BG });
+        }
+      }
+      renderBg();
+      renderTokens();
+      statusEl.textContent = "Synced ✓";
+      onSnapshot(mapRef, (docSnap) => {
+        if (docSnap.exists() && !dragging) {
+          mapState = { bgUrl: "", tokens: {}, ...docSnap.data() };
+          renderBg();
+          renderTokens();
+        }
+      });
+    } catch(e) {
+      statusEl.textContent = e.message || "Offline — check connection";
+      statusEl.classList.add("error");
+    }
+  }
+
+  function renderBg() {
+    const img = document.getElementById("map-bg");
+    if (mapState.bgUrl) { img.src = mapState.bgUrl; img.style.display = "block"; }
+    else img.style.display = "none";
+  }
+
+  function renderTokens() {
+    const canvas = document.getElementById("map-canvas");
+    canvas.innerHTML = "";
+    Object.entries(mapState.tokens || {}).forEach(([id, t]) => {
+      const wrap = document.createElement("div");
+      wrap.style.cssText = `position:absolute; left:${t.x ?? 50}px; top:${t.y ?? 50}px;`;
+      const el = document.createElement("div");
+      const isSpotlit = t.type === "player" &&
+        PARTY.find(p => p.name === t.name)?.docId === spotlightDocId;
+      el.className = "token" + (t.type === "enemy" ? " enemy" : " player-token") + (isSpotlit ? " in-spotlight" : "");
+      el.textContent = t.label || "?";
+      el.dataset.id = id;
+      const lbl = document.createElement("div");
+      lbl.className = "token-label";
+      lbl.textContent = t.name || "";
+      wrap.appendChild(el);
+      wrap.appendChild(lbl);
+      attachDrag(wrap, el, id);
+      if (t.type === "player") {
+        el.addEventListener("click", () => {
+          if (dragMoved) return;
+          const match = PARTY.find(p => p.label === t.label);
+          if (match) openSheet(match.docId);
+        });
+      }
+      canvas.appendChild(wrap);
+    });
+  }
+
+  function attachDrag(wrap, el, id) {
+    function startDrag(clientX, clientY) {
+      dragMoved = false;
+      const rect = document.getElementById("map-canvas").getBoundingClientRect();
+      const tokenRect = wrap.getBoundingClientRect();
+      dragging = { id, offsetX: clientX - tokenRect.left, offsetY: clientY - tokenRect.top, rect };
+    }
+    el.addEventListener("mousedown",  (e) => { e.preventDefault(); startDrag(e.clientX, e.clientY); });
+    el.addEventListener("touchstart", (e) => { const t = e.touches[0]; startDrag(t.clientX, t.clientY); }, { passive: true });
+  }
+
+  function bindDragEvents() {
+    function move(clientX, clientY) {
+      if (!dragging) return;
+      dragMoved = true;
+      const { id, offsetX, offsetY, rect } = dragging;
+      let x = clientX - rect.left - offsetX;
+      let y = clientY - rect.top - offsetY;
+      x = Math.max(0, Math.min(rect.width  - 32, x));
+      y = Math.max(0, Math.min(rect.height - 32, y));
+      if (!mapState.tokens[id]) return;
+      mapState.tokens[id].x = x;
+      mapState.tokens[id].y = y;
+      const w = document.getElementById("map-canvas").querySelector(`[data-id="${id}"]`)?.parentElement;
+      if (w) { w.style.left = x + "px"; w.style.top = y + "px"; }
+    }
+    async function endDrag() {
+      if (!dragging) return;
+      const { id } = dragging;
+      const t = mapState.tokens[id];
+      dragging = null;
+      if (!t) return;
+      try { await updateDoc(mapRef, { [`tokens.${id}.x`]: t.x, [`tokens.${id}.y`]: t.y }); } catch {}
+    }
+    window.addEventListener("mousemove", (e) => move(e.clientX, e.clientY));
+    window.addEventListener("mouseup", endDrag);
+    window.addEventListener("touchmove", (e) => { if (dragging) { const tt = e.touches[0]; move(tt.clientX, tt.clientY); } }, { passive: true });
+    window.addEventListener("touchend", endDrag);
+  }
+
+  // ── FEAR STRIP ────────────────────────────────────────────────────────────
+
+  async function initFearStrip() {
+    try {
+      const snap = await getDoc(poolsRef);
+      if (!snap.exists()) await setDoc(poolsRef, { fear: 0 });
+      else fearState = { ...fearState, ...snap.data() };
+      renderFearStrip();
+      onSnapshot(poolsRef, (d) => {
+        if (d.exists()) { fearState = { ...fearState, ...d.data() }; renderFearStrip(); }
+      });
+    } catch {}
+  }
+
+  function renderFearStrip() {
+    const row1 = document.getElementById("fear-row-1");
+    const row2 = document.getElementById("fear-row-2");
+    row1.innerHTML = ""; row2.innerHTML = "";
+    for (let i = 0; i < 12; i++) {
+      const pip = document.createElement("div");
+      pip.className = "mini-pip fear-pip" + (i < fearState.fear ? " filled" : "");
+      pip.title = `Fear ${i + 1}`;
+      pip.onclick = async () => {
+        const newVal = fearState.fear === i + 1 ? i : i + 1;
+        fearState.fear = newVal; renderFearStrip();
+        try { await updateDoc(poolsRef, { fear: newVal }); } catch {}
+      };
+      (i < 6 ? row1 : row2).appendChild(pip);
+    }
+  }
+
+  // ── PLAYER STRIP ──────────────────────────────────────────────────────────
+
+  function initPlayerStrip() {
+    const container = document.getElementById("player-strip-cards");
+    container.innerHTML = "";
+    PARTY.forEach(p => {
+      playerStates[p.docId] = { ...DEFAULT_CHAR_STATE };
+      charData[p.docId] = { ...DEFAULT_CHAR, name: p.name };
+      const card = document.createElement("div");
+      card.className = "strip-card";
+      card.id = "strip-" + p.docId;
+      card.onclick = () => openSheet(p.docId);
+      container.appendChild(card);
+      renderStripCard(p.docId);
+      onSnapshot(doc(db, "characters", p.docId), (d) => {
+        const data = d.exists() ? { ...DEFAULT_CHAR, ...d.data() } : { ...DEFAULT_CHAR, name: p.name };
+        charData[p.docId]    = data;
+        playerStates[p.docId] = data;
+        renderStripCard(p.docId);
+        if (activeDocId === p.docId && document.getElementById("sheet-drawer").classList.contains("open")) {
+          renderStaticSheet(p.docId);
+        }
+      });
+    });
+  }
+
+  function renderStripCard(docId) {
+    const p     = PARTY.find(x => x.docId === docId);
+    const state = playerStates[docId];
+    const card  = document.getElementById("strip-" + docId);
+    if (!card) return;
+    card.innerHTML = `
+      <div class="strip-name">${p.name}</div>
+      <div class="strip-pips-row">${miniPipsHTML(state.hp,     "")}</div>
+      <div class="strip-pips-row">${miniPipsHTML(state.stress, "stress-pip")}</div>
+      <div class="strip-pips-row">${miniPipsHTML(state.hope,   "hope-pip")}</div>`;
+  }
+
+  function miniPipsHTML(value, typeClass) {
+    return Array.from({ length: MAX_PIPS }, (_, i) =>
+      `<div class="mini-pip ${typeClass}${i < value ? " filled" : ""}"></div>`
+    ).join("");
+  }
+
+  // ── SHEET DRAWER ──────────────────────────────────────────────────────────
+
+  function bindDrawerUI() {
+    document.getElementById("drawer-close").onclick   = closeSheet;
+    document.getElementById("drawer-overlay").onclick = closeSheet;
+  }
+
+  function bindFullscreen() {
+    const btn = document.getElementById("fullscreen-btn");
+
+    btn.onclick = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
+
+    document.addEventListener("fullscreenchange", () => {
+      const isFs = !!document.fullscreenElement;
+      btn.textContent = isFs ? "✕" : "⛶";
+      btn.title       = isFs ? "Exit fullscreen" : "Toggle fullscreen";
+      document.body.classList.toggle("is-fullscreen", isFs);
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+  }
+
+  async function openSheet(docId) {
+    activeDocId = docId;
+    // Render immediately with whatever is cached
+    renderStaticSheet(docId);
+    subscribeSheetPips(docId);
+    document.getElementById("sheet-drawer").classList.add("open");
+    document.getElementById("drawer-overlay").classList.add("visible");
+    // If static fields are missing (seed not yet run from GM Tools), fetch directly
+    if (!charData[docId]?.portrait && !charData[docId]?.traits?.length) {
+      try {
+        const snap = await getDoc(doc(db, "characters", docId));
+        if (snap.exists()) {
+          charData[docId] = { ...DEFAULT_CHAR, ...snap.data() };
+          if (activeDocId === docId) renderStaticSheet(docId);
+        }
+      } catch {}
+    }
+  }
+
+  function closeSheet() {
+    if (sheetUnsub) { sheetUnsub(); sheetUnsub = null; }
+    document.getElementById("sheet-drawer").classList.remove("open");
+    document.getElementById("drawer-overlay").classList.remove("visible");
+  }
+
+  function renderStaticSheet(docId) {
+    const char = charData[docId] || { ...DEFAULT_CHAR, name: PARTY.find(p => p.docId === docId)?.name || docId };
+    buildDrawerPicker(docId);
+    document.getElementById("drawer-char-name").textContent = char.name || docId;
+    document.getElementById("drawer-char-subtitle").textContent = `${char.ancestry || "—"} • ${char.charClass || "—"}`;
+    const frame = document.getElementById("drawer-portrait");
+    const img   = document.getElementById("drawer-portrait-img");
+    if (char.portrait) { img.src = char.portrait; frame.style.display = "flex"; }
+    else frame.style.display = "none";
+    document.getElementById("drawer-traits-grid").innerHTML = (char.traits || []).map(t =>
+      `<div class="trait"><div class="trait-name">${t.name}</div><div class="trait-val">${t.val}</div></div>`
+    ).join("");
+    document.getElementById("drawer-stats-line").innerHTML = (char.traits || []).length
+      ? `Evasion: <span style="color:#c9a8ff;font-weight:bold;">${char.evasion}</span> &nbsp;|&nbsp; Proficiency: <span style="color:#c9a8ff;font-weight:bold;">${char.proficiency}</span>`
+      : "";
+    document.getElementById("drawer-features-list").innerHTML = (char.features || []).length
+      ? char.features.map(f => `<div class="feature"><b>${f.name}:</b> ${f.desc}</div>`).join("")
+      : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No features listed yet.</div>`;
+    document.getElementById("drawer-domains-list").innerHTML = (char.domains || []).length
+      ? char.domains.map(d => `<span class="badge">${d}</span>`).join("") +
+        `<div class="feature" style="margin-top:6px;"><i>Domain cards pending.</i></div>`
+      : `<div class="feature" style="color:#9b8bbf;font-style:italic;">No domains listed yet.</div>`;
+  }
+
+  function buildDrawerPicker(currentDocId) {
+    const picker = document.getElementById("drawer-char-picker");
+    picker.innerHTML = "";
+    PARTY.forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "char-btn" + (p.docId === currentDocId ? " active" : "");
+      btn.textContent = charData[p.docId]?.name || p.name;
+      btn.onclick = () => openSheet(p.docId);
+      picker.appendChild(btn);
+    });
+  }
+
+  function subscribeSheetPips(docId) {
+    if (sheetUnsub) { sheetUnsub(); sheetUnsub = null; }
+    activeCharState = { ...DEFAULT_CHAR_STATE };
+    const ref = doc(db, "characters", docId);
+    const statusEl = document.getElementById("drawer-sync-status");
+    statusEl.textContent = "Loading...";
+    statusEl.classList.remove("error");
+    getDoc(ref).then(async (snap) => {
+      if (!snap.exists()) {
+        await setDoc(ref, DEFAULT_CHAR_STATE);
+        activeCharState = { ...DEFAULT_CHAR_STATE };
+      } else {
+        activeCharState = { ...DEFAULT_CHAR_STATE, ...snap.data() };
+      }
+      renderDrawerPips();
+      statusEl.textContent = "Synced ✓";
+      sheetUnsub = onSnapshot(ref, (d) => {
+        if (d.exists()) {
+          activeCharState = { ...DEFAULT_CHAR_STATE, ...d.data() };
+          renderDrawerPips();
+        }
+      });
+    }).catch(e => {
+      statusEl.textContent = e.message || "Offline";
+      statusEl.classList.add("error");
+    });
+  }
+
+  function renderDrawerPips() {
+    buildDrawerPips("drawer-hp-pips",     "hp");
+    buildDrawerPips("drawer-stress-pips", "stress");
+    buildDrawerPips("drawer-hope-pips",   "hope");
+  }
+
+  function buildDrawerPips(containerId, key) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = "";
+    for (let i = 0; i < MAX_PIPS; i++) {
+      const pip = document.createElement("div");
+      pip.className = "pip" + (i < activeCharState[key] ? " filled" : "");
+      pip.onclick = () => toggleDrawerPip(key, i);
+      container.appendChild(pip);
+    }
+  }
+
+  async function toggleDrawerPip(key, index) {
+    const newVal = activeCharState[key] === index + 1 ? index : index + 1;
+    activeCharState[key] = newVal;
+    renderDrawerPips();
+    const ref = doc(db, "characters", activeDocId);
+    const statusEl = document.getElementById("drawer-sync-status");
+    try {
+      await updateDoc(ref, { [key]: newVal });
+      statusEl.textContent = "Synced ✓";
+      statusEl.classList.remove("error");
+    } catch(e) {
+      statusEl.textContent = e.message || "Sync failed";
+      statusEl.classList.add("error");
+    }
+  }
+
+  if (!document.getElementById("auth-gate")) window.initApp();
+</script>
+</body>
+</html>
