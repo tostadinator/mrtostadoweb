@@ -9,8 +9,8 @@ sitemap: false
 <div class="card-grid">
   <div class="card">
     <div class="card-icon">📘</div>
-    <h3>Class One</h3>
-    <p>Placeholder description for Class One.</p>
+    <h3>Haas Certification</h3>
+    <p>Placeholder description for Haas Certification.</p>
     <a class="card-link" href="{{ '/classes/class-1/' | relative_url }}">View class</a>
   </div>
   <div class="card">

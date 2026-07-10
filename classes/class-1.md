@@ -1,6 +1,6 @@
 ---
 layout: class
-title: Class One
+title: Haas Certification
 permalink: /classes/class-1/
 sitemap: false
 ---
@@ -26,7 +26,7 @@ Placeholder overview for Class One. Replace this with a short description of wha
 Placeholder description of the ideal student for Class One.
 
 <div class="cta-block">
-  <h3>Interested in Class One?</h3>
+  <h3>Interested in Haas Certification?</h3>
   <p>Placeholder call-to-action text — add enrollment info, contact details, or a signup link here.</p>
   <a class="cta-button" href="#">Get Started</a>
 </div>
