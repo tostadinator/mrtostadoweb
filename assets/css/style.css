@@ -284,6 +284,95 @@ main p, main li {
 }
 .cta-button:hover { background: var(--accent-hover); color: #fff; }
 
+/* ── File embeds & downloads ── */
+.file-embed {
+  margin: 1rem 0 2rem;
+}
+
+.file-embed-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.file-embed iframe {
+  width: 100%;
+  height: 600px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  display: block;
+}
+
+.file-links {
+  list-style: none;
+  margin: 0 0 2rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.file-links li {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.file-links a {
+  font-weight: 600;
+}
+
+.file-type {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+main pre {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin: 1rem 0 2rem;
+}
+
+main code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: #e5e7eb;
+}
+
+main details {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0 2rem;
+}
+
+main details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+}
+
+main details[open] summary {
+  margin-bottom: 0.5rem;
+}
+
+main details pre {
+  margin: 0.5rem 0 0;
+}
+
 /* ── Footer ── */
 footer {
   border-top: 1px solid var(--border);
