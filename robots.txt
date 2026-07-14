@@ -1,3 +1,4 @@
 User-agent: *
 Disallow: /classes/
 Disallow: /daggerheart/
+Disallow: /slack-recap/
